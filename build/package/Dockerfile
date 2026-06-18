@@ -1,9 +1,9 @@
-# FROM node:24-alpine AS spa-builder
-# WORKDIR /spa
-# COPY web/ .
-# ARG VITE_API_URL
-# ENV VITE_API_URL=$VITE_API_URL
-# RUN npm install && npm run build && rm -rf node_modules
+FROM node:24-alpine AS spa-builder
+WORKDIR /spa
+COPY web/ .
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm install && npm run build && rm -rf node_modules
 
 FROM golang:1.25-alpine AS go-builder
 WORKDIR /app
@@ -17,6 +17,6 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 COPY --from=go-builder /app/app .
 COPY public/ ./public/
-# COPY --from=spa-builder /public/build ./public/build
+COPY --from=spa-builder /public/build ./public/build
 EXPOSE 8000
 CMD ["./app"]
