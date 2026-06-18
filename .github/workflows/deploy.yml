@@ -20,7 +20,7 @@ jobs:
             cd /root/docker/go-fiber-vue
             git reset --hard
             git pull
-            bash pnpm -C web i --prod
-            bash pnpm -C web build
+            pnpm -C web i --prod
+            pnpm -C web build
             chmod +x ./scripts/deploy.sh
             bash ./scripts/deploy.sh
