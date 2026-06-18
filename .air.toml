@@ -1,0 +1,25 @@
+root = "."
+watch_dir = ["cmd", "internal"]
+
+[build]
+  cmd = "go build -o ./tmp/main.exe ./cmd/app"
+  bin = "./tmp/main.exe"
+  delay = 1000
+  exclude_dir = ["assets", "tmp", "vendor", "node_modules", "web", ".github", ".vscode", "public", "logs"]
+  exclude_regex = []
+  exclude_unchanged = false
+  follow_symlink = false
+  log = "build-errors.log"
+  args_bin = []
+
+[log]
+  main_only = false
+
+[color]
+  main = "green"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "magenta"
+
+[misc]
+  clean_on_exit = true

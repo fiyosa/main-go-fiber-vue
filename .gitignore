@@ -1,0 +1,39 @@
+# Binary
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/app
+
+# Test binary
+*.test
+
+# Go
+*.out
+go.work
+
+# Env
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Build
+src/web/dist/
+dist/
+
+# IDE
+# .vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+public/build
+logs
+tmp

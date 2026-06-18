@@ -1,0 +1,22 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Miscellaneous
+/static/
+
+node_modules
+coverage
+
+vendor
+public/**
+build
+dist
+*.md
+*.lock
+*lock.yaml
+*lock.json
+pnpm*
