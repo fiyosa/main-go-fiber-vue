@@ -25,6 +25,7 @@ func main() {
 	app.Use(cors.New(config.CORSConfig()))
 
 	provider.RegisterMiddleware(app)
+
 	routes.RegisterAPI(app)
 	routes.RegisterWeb(app)
 

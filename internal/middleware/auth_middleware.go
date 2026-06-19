@@ -15,8 +15,8 @@ func AuthMiddleware() fiber.Handler {
 		token := c.Cookies("token")
 		if token == "" {
 			authHeader := c.Get("Authorization")
-			if strings.HasPrefix(authHeader, "Bearer ") {
-				token = strings.TrimPrefix(authHeader, "Bearer ")
+			if after, ok := strings.CutPrefix(authHeader, "Bearer "); ok {
+				token = after
 			}
 		}
 		if token == "" {
