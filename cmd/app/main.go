@@ -5,7 +5,6 @@ import (
 	"go-fiber-svelte/internal/config"
 	"go-fiber-svelte/internal/lib"
 	"go-fiber-svelte/internal/provider"
-	"go-fiber-svelte/internal/routes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -24,10 +23,7 @@ func main() {
 	app.Use(fiberLogger.New())
 	app.Use(cors.New(config.CORSConfig()))
 
-	provider.RegisterMiddleware(app)
-
-	routes.RegisterAPI(app)
-	routes.RegisterWeb(app)
+	bootstrap.RegisterApp(app)
 
 	port := config.APP_PORT
 	if port == "" {
