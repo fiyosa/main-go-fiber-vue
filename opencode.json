@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "Laptop ini spesifikasinya rendah. JANGAN jalankan hasil build (binary hasil `go build`) kecuali diminta secara eksplisit.",
+    "Untuk memeriksa kode Go, cukup gunakan `go vet` atau `go build ./...` tanpa menjalankan hasilnya.",
+    "GUNAKAN bahasa inggris saat menulis comment pada file."
+  ],
+  "permissions": [
+    { "action": "edit", "resource": "*", "effect": "ask" },
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "*.env*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+  	{ "action": "shell", "resource": "git push *", "effect": "deny" },
+  	{ "action": "shell", "resource": "*", "effect": "allow" }
+  ],
+  "mcp": {
+    "servers": {
+	  "codegraph": {
+        "type": "local",
+        "command": ["codegraph", "serve", "--mcp", "--no-watch"],
+        "disabled": true
+      }
+    }
+  }
+}
