@@ -16,12 +16,11 @@ const (
 
 	// DefaultAdmin* define the account created by `console db seed`. Change the
 	// password after seeding if the environment is shared.
-	DefaultAdminUsername = "admin"
 	DefaultAdminEmail    = "admin@example.com"
 	DefaultAdminPassword = "Admin#Local2026"
 )
 
-func SeedAdmin(ctx context.Context, db *gorm.DB, username, email, password string) error {
+func SeedAdmin(ctx context.Context, db *gorm.DB, email, password string) error {
 	if db == nil {
 		return fmt.Errorf("database is not configured")
 	}
@@ -43,8 +42,6 @@ func SeedAdmin(ctx context.Context, db *gorm.DB, username, email, password strin
 	}
 
 	user := &entity.User{
-		Name:     username,
-		Username: username,
 		Email:    email,
 		Password: hash,
 	}

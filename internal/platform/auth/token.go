@@ -44,8 +44,7 @@ type Service struct {
 }
 
 type Claims struct {
-	Username string `json:"username"`
-	Version  int    `json:"ver"`
+	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
 
@@ -87,30 +86,28 @@ func (s *Service) NewRefreshToken() (string, string, error) {
 	return NewRefreshToken()
 }
 
-func (s *Service) IssueAccessToken(userID uint64, username string, tokenVersion int) (string, time.Time, error) {
+func (s *Service) IssueAccessToken(userID uint64, email string) (string, error) {
 	now := time.Now().UTC()
-	expiresAt := now.Add(s.accessTTL)
 	claims := Claims{
-		Username: username,
-		Version:  tokenVersion,
+		Email: email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    s.issuer,
 			Audience:  jwt.ClaimStrings{s.audience},
 			Subject:   strconv.FormatUint(userID, 10),
 			ID:        newJTI(),
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessTTL)),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(s.secret)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("sign access token: %w", err)
+		return "", fmt.Errorf("sign access token: %w", err)
 	}
-	return signed, expiresAt, nil
+	return signed, nil
 }
 
-func (s *Service) ValidateAccessToken(raw string, currentVersion int) (*Claims, error) {
+func (s *Service) ValidateAccessToken(raw string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(raw, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
@@ -119,9 +116,6 @@ func (s *Service) ValidateAccessToken(raw string, currentVersion int) (*Claims, 
 		return s.secret, nil
 	}, jwt.WithIssuer(s.issuer), jwt.WithAudience(s.audience), jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
-		return nil, ErrInvalidToken
-	}
-	if claims.Version != currentVersion {
 		return nil, ErrInvalidToken
 	}
 	return claims, nil

@@ -1,6 +1,6 @@
 # Todo: Slice 1 — Minimal Login API
 
-Scope: one public endpoint, `POST /api/v1/login`, using only `users` and `auths`.
+Scope: one public endpoint, `POST /api/v1/auth/login`, using only `users` and `auths`.
 No RBAC, no roles/permissions/menus, no LDAP, no 2FA, no SSO.
 Do **not** create `./tests` or `./.github` yet.
 
@@ -26,7 +26,7 @@ Localization contract: `docs/20-localization.md`. Every JSON response carries a 
   - Verify: `go build ./...`, `go vet ./...` pass; manual run confirmed 200/503
 
 - [x] Task 2 — Schema and seed user
-  - [x] `users` migration with `token_version` (default 0)
+  - [x] `users` migration with `id`, `email`, `password`, and timestamps
   - [x] `auths` migration with unique `token`, unique `refresh_token`, expiry/revoked indexes
   - [x] `console migrate`, `migrate status`, `migrate down` implemented
   - [x] `console db seed` creates one admin (bcrypt cost 12), idempotent
@@ -35,26 +35,26 @@ Localization contract: `docs/20-localization.md`. Every JSON response carries a 
 
 - [x] Task 3 — Password, JWT, and refresh-token services
   - [x] bcrypt hash/verify (cost 12)
-  - [x] HS256 JWT issue/verify with `iss`, `aud`, `sub`, `username`, `ver`, `jti`, `iat`, `exp`
-  - [x] Reject wrong `aud`, expired tokens, and `ver` mismatch
+  - [x] HS256 JWT issue/verify with `iss`, `aud`, `sub`, `email`, `jti`, `iat`, `exp`
+  - [x] Reject wrong `aud`, expired tokens, and invalid signatures
   - [x] Refresh token: 256-bit random, base64url raw + SHA-256 hex hash
   - Verify: `go test ./internal/platform/auth` passes
 
 - [x] Task 4 — Login use case with repositories
   - [x] `User` and `Auth` entities
   - [x] `UserRepository` + `AuthRepository` interfaces and GORM implementations
-  - [x] `LoginUseCase` verifies password, issues tokens, inserts `auths`, updates `last_login_at`
+  - [x] `LoginUseCase` verifies password, issues tokens, and inserts `auths`
   - [x] Unknown user / wrong password → `ErrInvalidCredentials`
   - [x] No permission/scope claims; no LDAP/2FA branch
   - Verify: table-driven use-case tests with fakes pass
 
-- [x] Task 5 — `POST /api/v1/login` end-to-end
+- [x] Task 5 — `POST /api/v1/auth/login` end-to-end
   - [x] `LoginRequest`, controller, `LoginResponse`, public route
   - [x] Valid login → 200 with `success`, `message`, `token`, `token_type`, `expires_in`, `refresh_token`
   - [x] Invalid login → 401 with `lang.invalid_credentials`
   - [x] Missing fields → 422 with translated field errors
   - [x] Route has no permission middleware
-  - [x] Writes one `auths` row and updates `last_login_at` (covered by use-case test)
+  - [x] Writes one `auths` row (covered by use-case test)
   - [ ] Live login against Postgres — blocked: no DSN
 
 - [x] Task 6 — Localization (`docs/20-localization.md`)

@@ -2,12 +2,12 @@
 
 ## 7.1 Global routing rules
 
-Every JSON API lives under a single prefix: `/api/v1`. There is no separate admin API path. The `/api` group is mounted as `/api/v1` in `internal/routes/api.go`, so module routes declare only their relative path (for example `/login` becomes `/api/v1/login`).
+Every JSON API lives under a single prefix: `/api/v1`. There is no separate admin API path. The `/api` group is mounted as `/api/v1` in `internal/routes/api.go`, so module routes declare only their relative path (for example `/auth/login` becomes `/api/v1/auth/login`).
 
 | Group      | Prefix                            | Middleware                            | Notes                                     |
 | ---------- | --------------------------------- | ------------------------------------- | ----------------------------------------- |
 | API (all)  | `/api/v1`                         | `auth:admin` + bindings               | Every context route file, admin or not    |
-| API public | `/api/v1`                         | Bearer token + `token_version` check   | External integrations under the same root |
+| API public | `/api/v1`                         | Bearer token validation                 | External integrations under the same root |
 | Public     | `/`                               | none                                  | Media, file upload, PDF, SSO, SPA         |
 | SSO        | `/auth/login/oauth2`, `/callback` | none                                  | See [Section 8.9](08-authentication.md#89-sso-callback)                           |
 | SPA        | `/*` fallback                     | none                                  | `internal/routes/web.go` serves the FE shell       |

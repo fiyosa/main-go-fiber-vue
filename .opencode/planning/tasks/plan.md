@@ -3,13 +3,13 @@
 ## Overview
 
 This plan supersedes the Phase 0 ordering in `SPEC.md`. The first deliverable is one public
-endpoint, `POST /api/v1/login`, backed only by the `users` and `auths` tables. There is no RBAC,
+endpoint, `POST /api/v1/auth/login`, backed only by the `users` and `auths` tables. There is no RBAC,
 no roles/permissions/menus, no LDAP, no 2FA, and no SSO.
 
 Login verifies the local `users.password` hash (bcrypt cost 12), then issues:
 
-- an HS256 JWT access token (`JWT_ACCESS_TTL`, default 3h) with `iss`, `aud`, `sub`, `username`,
-  `ver`, `jti`, `iat`, `exp`;
+- an HS256 JWT access token (`JWT_ACCESS_TTL`, default 3h) with `iss`, `aud`, `sub`, `email`,
+  `jti`, `iat`, `exp`;
 - an opaque refresh token (`JWT_REFRESH_TTL`, default 30d), returned once and stored as a
   SHA-256 hex hash in `auths.refresh_token`.
 
@@ -22,8 +22,9 @@ No Go source files exist yet. `tests/` and `.github/` remain intentionally absen
 
 ## Architecture Decisions
 
-- New PostgreSQL schema; only `users` and `auths` tables (plus indexes). No RBAC tables.
-- `users.token_version INTEGER NOT NULL DEFAULT 0`; the JWT `ver` claim is checked against it.
+- New PostgreSQL schema; only `users` (`id`, `email`, `password`, timestamps) and `auths` tables
+  (plus indexes). No RBAC tables.
+- Revocation uses `auths.revoked_at`; there is no `users.token_version` column.
 - Refresh tokens: 256-bit random, base64url; only the hex SHA-256 is stored.
 - One `auths` row per login: `token` (JWT), `refresh_token` (hash), expiries, `meta`, `revoked_at`.
 - Login is a public route. No auth or permission middleware is attached to it.
@@ -32,7 +33,7 @@ No Go source files exist yet. `tests/` and `.github/` remain intentionally absen
   Never commit keys.
 - The login endpoint does not require `roles`/`permissions`; `GET /me` is out of scope for this
   slice.
-- A minimal seeder creates one user from defaults in code (`admin` / `admin@example.com`).
+- A minimal seeder creates one user from defaults in code (`admin@example.com`).
 - `tests/` is deferred; use package-local `_test.go` files and manual `curl` until enabled.
 - Postgres is required to run the endpoint. If no DSN is available, verification stops at
   build + unit tests with fake repositories.
@@ -44,12 +45,11 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
      │                                                        │
      ├──> JWT + refresh token service ──┐                     │
      │                                  │                     │
-     └──> bcrypt password verifier ─────┼──> login usecase <──┘ (user lookup)
+     └──> bcrypt password verifier ─────┼──> login usecase <──┘ (user lookup by email)
                                         │         │
-                                        │         ├──> auths insert (refresh hash)
-                                        │         └──> last_login_at update
+                                        │         └──> auths insert (refresh hash)
                                         │                     │
-                                        └──> controller ──> route POST /api/v1/login
+                                        └──> controller ──> route POST /api/v1/auth/login
                                                               │
                                                               └──> Fiber runtime
 ```
@@ -79,7 +79,7 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
     and an idempotent admin seeder that hashes the password with bcrypt cost 12.
   - Acceptance:
     - [ ] Up/down migrations create and drop `users` and `auths` with the documented indexes.
-    - [ ] `users` has `token_version` defaulting to 0.
+    - [ ] `users` stores only `id`, `email`, `password`, and timestamps.
     - [ ] `console migrate status` reports the current version.
     - [ ] `console db seed` creates exactly one admin and refuses empty/short passwords.
   - Verify: run against a Postgres DSN; inspect `users` and `auths`; rerun seed (no duplicates).
@@ -104,7 +104,7 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
     above, and a refresh-token generator that returns raw + SHA-256 hash.
   - Acceptance:
     - [ ] Correct password verifies; wrong password fails.
-    - [ ] JWT round-trips; wrong `aud`/`iss`/expired/`ver` mismatch is rejected.
+    - [ ] JWT round-trips; wrong `aud`/`iss`/expired token is rejected.
     - [ ] Refresh token is 256-bit and its hash is stable.
   - Verify: package-local `_test.go` with a fixed test secret.
   - Dependencies: Task 1.
@@ -115,11 +115,11 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
 - [ ] Task 4: Login use case with repositories
   - Description: Add `User` and `Auth` entities, `UserRepository` and `AuthRepository`
     (interfaces + GORM implementations), and a `LoginUseCase` that validates credentials,
-    issues tokens, inserts an `auths` row, and updates `last_login_at`.
+    issues tokens, and inserts an `auths` row.
   - Acceptance:
     - [ ] Valid credentials return access + refresh tokens and create one `auths` row.
     - [ ] Unknown user or wrong password returns `ErrInvalidCredentials`.
-    - [ ] The JWT contains the user's `ver` and no permission/scope claims.
+    - [ ] The JWT contains the user's `email` and no permission/scope claims.
     - [ ] No LDAP or 2FA branch exists.
   - Verify: table-driven use-case tests with fake repositories.
   - Dependencies: Tasks 2, 3.
@@ -139,7 +139,7 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
 
 ### Phase 3: HTTP Login Slice
 
-- [ ] Task 5: `POST /api/v1/login` end-to-end
+- [ ] Task 5: `POST /api/v1/auth/login` end-to-end
   - Description: Add the login request DTO, controller, response DTO, and public route; wire the
     real GORM repositories and the login use case through bootstrap.
   - Acceptance:
@@ -148,8 +148,8 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
     - [ ] Invalid credentials return 401 `{success:false, message:"Invalid credentials."}`.
     - [ ] Missing fields return 422 with field errors.
     - [ ] The route is public and has no permission middleware.
-    - [ ] An `auths` row is written and `last_login_at` is updated.
-  - Verify: `curl -i -X POST localhost:8080/api/v1/login` with valid and invalid bodies;
+    - [ ] An `auths` row is written.
+  - Verify: `curl -i -X POST localhost:8080/api/v1/auth/login` with valid and invalid bodies;
     focused package tests.
   - Dependencies: Task 4.
   - Files: `internal/app/presentation/core/request/login_request.go`,
@@ -210,8 +210,8 @@ config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
 ## Open Questions
 
 1. Should `JWT_SECRET` rotation (two active secrets) be added before production?
-2. Add `POST /api/v1/refresh` now or defer until after login works?
-3. Login identifier: username only, or username-or-email (docs say either)?
+2. Add `POST /api/v1/auth/refresh` now or defer until after login works?
+3. Retention defaults for `auths`.
 4. Where will the Postgres DSN come from for manual verification?
-5. Seed credentials: which env names and default admin username?
+5. Seed credentials: keep defaults in code (`admin@example.com`) or move them to env?
 6. When should `tests/` and `.github/` be enabled?

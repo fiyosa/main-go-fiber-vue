@@ -133,7 +133,7 @@
     "company": "Perusahaan",
     "workflow_approval_stage": "Tahap Alur Persetujuan",
     "workflow_approval_stages": "Tahapan Alur Persetujuan",
-    "invalid_credentials": "Username atau Password tidak valid"
+    "invalid_credentials": "Email atau Password tidak valid"
   },
   "db": {
     "duplicate": "Data sudah ada",

@@ -4,7 +4,7 @@
 - [ ] JWT signing keys rotated with `kid` support.
 - [ ] Access tokens short-lived (`JWT_ACCESS_TTL`); refresh tokens rotated and stored as SHA-256 hashes.
 - [ ] Refresh token rotation invalidates the previous hash; row revocation takes effect on refresh.
-- [ ] `token_version` invalidates all sessions on logout.
+- [ ] `auths.revoked_at` invalidates all sessions on logout.
 - [ ] Password policy: minimum 12 characters, mixed case, number, symbol, and breached-password check (HIBP) if the policy remains.
 - [ ] Login rate limit 5/minute.
 - [ ] API rate limit 60/minute per user/IP.

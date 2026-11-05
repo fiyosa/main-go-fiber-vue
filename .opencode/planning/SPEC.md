@@ -4,7 +4,7 @@ Status: Draft
 Date: 2026-11-02
 Source of truth: `docs/01`–`docs/19` and appendices
 Scope: Phase 0 only. Later phases get their own specs.
-Current increment: Slice 1 — one public login API (`POST /api/v1/login`) using only `users`
+Current increment: Slice 1 — one public login API (`POST /api/v1/auth/login`) using only `users`
 and `auths`; no RBAC, LDAP, 2FA, or SSO.
 
 ## 1. Objective
@@ -293,7 +293,7 @@ Never:
 
 1. Exact Fiber v3 version to pin (resolve at M0.3 after a compile smoke test).
 2. JWT secret rotation: one `JWT_SECRET` now; key rotation and `kid` are out of scope.
-3. Retention defaults: `activity_log` 90 days, `auths` pruned 30 days after `refresh_expires_at`.
+3. Retention defaults: `activity_log` 90 days, `auths` pruned by age (`created_at` + refresh TTL).
 4. Frontend source and `public/build` are not in this workspace; how will they be delivered?
 5. MCP stays disabled until Phase 6; confirm no `/api/mcp` route in Phase 0.
 6. `docs/06-layer-mapping.md` import examples omit the `internal/` prefix; section 4 here is authoritative.

@@ -6,7 +6,7 @@
 - Use JWT access tokens for stateless validation, with server-side revocation.
 - Use opaque rotating refresh tokens; store only their SHA-256 hash in the database.
 - Keep the existing token response shape for the SPA.
-- Login uses local username/password only; there is no LDAP credential bind and no second-factor challenge.
+- Login uses local email/password only; there is no LDAP credential bind and no second-factor challenge.
 - LDAP is limited to directory synchronization.
 
 Note: the current Laravel code uses Passport personal access tokens (`$user->createToken('userToken', ['*'])->accessToken`) with a 3-hour expiry and the `impersonation` scope. The Go design keeps the client-visible token behavior, but uses one `auths` table, a self-contained JWT access token, and an opaque rotating refresh token. Personal access tokens, OAuth clients, and scopes are not ported.
@@ -29,20 +29,17 @@ Access token claims:
     "iss": "app-api",
     "aud": "app-spa",
     "sub": "123",
-    "username": "jdoe",
-    "roles": ["super admin"],
-    "ver": 7,
+    "email": "jdoe@example.com",
     "jti": "01J...",
     "iat": 1770000000,
-    "exp": 1770010800,
-    "act": { "sub": "1", "username": "admin" }
+    "exp": 1770010800
 }
 ```
 
-- `ver` is the user's `token_version`. Incrementing it invalidates all existing access tokens for that user without a blacklist table.
+- `sub` is the user ID; `email` is the login identifier stored on the token.
 - `jti` is a random claim that keeps every JWT unique; it is not a separate column.
-- `act` is present only on impersonation tokens.
-- There is no `scopes` claim; authorization uses roles and permissions.
+- There is no `scopes` claim; authorization is not implemented in this slice.
+- Revocation relies on `auths.revoked_at`, not on a token-version claim.
 
 ## 8.3 Database table
 
@@ -56,8 +53,6 @@ CREATE TABLE auths (
     refresh_token       CHAR(64) NOT NULL,
     impersonator_id     BIGINT NULL REFERENCES users (id) ON DELETE SET NULL,
     meta                JSONB NULL,
-    token_expires_at    TIMESTAMPTZ NOT NULL,
-    refresh_expires_at  TIMESTAMPTZ NOT NULL,
     revoked_at          TIMESTAMPTZ NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -66,7 +61,6 @@ CREATE TABLE auths (
 CREATE UNIQUE INDEX auths_token_idx ON auths (token);
 CREATE UNIQUE INDEX auths_refresh_token_idx ON auths (refresh_token);
 CREATE INDEX auths_user_revoked_idx ON auths (user_id, revoked_at);
-CREATE INDEX auths_refresh_expiry_idx ON auths (refresh_expires_at);
 CREATE INDEX auths_impersonator_idx ON auths (impersonator_id)
     WHERE impersonator_id IS NOT NULL;
 ```
@@ -77,18 +71,17 @@ Column rules:
 - `refresh_token` is the hex SHA-256 hash of the raw refresh token; the raw value is returned to the client once and never stored.
 - `impersonator_id` is null for a normal session. When set, `user_id` is the impersonated user and `impersonator_id` is the admin.
 - `meta` is optional JSON such as `ip`, `user_agent`, `device`, and `last_used_at`. A null value is treated as an empty object; no auth decision depends on it.
-- `token_expires_at` is `now + JWT_ACCESS_TTL` at issue time and matches the JWT `exp` claim.
-- `refresh_expires_at` is `now + JWT_REFRESH_TTL` at issue time and is used for cleanup and refresh validation.
 - `revoked_at` marks a session as revoked without deleting the row.
-- Changing `.env` TTL values affects only tokens issued after the change; existing rows keep their stored expiry.
+- No expiry column is stored. The access token carries its own `exp` claim (validated on every request); the refresh token expiry is derived at use time from `created_at + JWT_REFRESH_TTL`.
+- Changing `.env` TTL values affects tokens issued after the change.
 
 Validation rules:
 
-- Every request validates the JWT signature, `exp`, `iss`, `aud`, and `ver` against the user's `token_version`.
+- Every request validates the JWT signature, `exp`, `iss`, and `aud`.
 - Impersonation tokens (`act` claim) also require an `auths` row with matching `token` and `revoked_at IS NULL`, so stopping impersonation takes effect immediately.
-- Refresh always requires an `auths` row with matching `refresh_token`, `revoked_at IS NULL`, and `refresh_expires_at > now()`.
+- Refresh always requires an `auths` row with matching `refresh_token` and `revoked_at IS NULL`; the row's age (`created_at`) must be within `JWT_REFRESH_TTL`.
 
-Also add `token_version INTEGER NOT NULL DEFAULT 0` to `users`.
+The current `users` table stores only `id`, `email`, `password`, `created_at`, and `updated_at`.
 
 ## 8.3.1 Initial auth data
 
@@ -100,7 +93,7 @@ Seeded once (idempotent):
 | ----------------------- | ---------------------------------------------------------------------- |
 | Roles and permissions   | Exported from the Laravel `roles`, `permissions`, and pivot tables      |
 | Menus and menu access   | Exported from the Laravel menu tables and their permission mapping      |
-| First admin user        | `SEED_ADMIN_USERNAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`         |
+| First admin user        | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`                                |
 | Settings and templates  | Defaults from the Laravel seeders                                       |
 
 Rules:
@@ -109,7 +102,6 @@ Rules:
 - Refuse to seed when `SEED_ADMIN_PASSWORD` is empty, shorter than 12 characters, or equal to a known default.
 - `ON CONFLICT (...) DO NOTHING` for reference data and `DO UPDATE` only for fields that are safe to refresh.
 - The admin seeder runs only when `users` is empty; it must not overwrite existing users.
-- `token_version` starts at `0`; increment it on password change, forced logout, and role reset.
 
 Tables that stay empty until runtime:
 
@@ -122,7 +114,7 @@ User population after install:
 1. Seed the admin and reference data.
 2. Run the LDAP directory sync to import employees, or create accounts through the admin API.
 3. SSO-only accounts have `password = NULL`; local login rejects them until an admin sets a password.
-4. Invalidate sessions by bumping `token_version` when an account is re-created or its password is reset.
+4. Invalidate sessions by setting `auths.revoked_at` when an account is re-created or its password is reset.
 
 Deployment sequence for a fresh database:
 
@@ -193,10 +185,10 @@ WHERE ur.user_id = $1;
 
 | Method | Path                  | Purpose                                         | Compatibility                                    |
 | ------ | --------------------- | ----------------------------------------------- | ------------------------------------------------ |
-| `POST` | `/api/v1/login`       | Local username/password login                   | Returns tokens directly; no second-factor branch |
-| `POST` | `/api/v1/refresh`     | Rotate refresh token and issue new access token | New endpoint                                     |
-| `POST` | `/api/v1/logout`      | Revoke all user sessions                        | Same                                             |
-| `GET`  | `/api/v1/me`          | Current user + roles + permissions              | Same                                             |
+| `POST` | `/api/v1/auth/login`   | Local email/password login                      | Returns tokens directly; no second-factor branch |
+| `POST` | `/api/v1/auth/refresh` | Rotate refresh token and issue new access token | New endpoint                                     |
+| `POST` | `/api/v1/auth/logout`  | Revoke all user sessions                        | Same                                             |
+| `GET`  | `/api/v1/auth/me`      | Current user + roles + permissions              | Same                                             |
 
 Success messages use `lang.logged_in_successfully` and `lang.logged_out_successfully`; failures use `lang.invalid_credentials` and `auth.unauthenticated`. See [Section 20](20-localization.md).
 
@@ -218,7 +210,7 @@ The SPA reads `response.data.token` or `response.token`, so both top-level and n
 Invalid credentials:
 
 ```json
-{ "success": false, "message": "Username or Password is invalid" }
+{ "success": false, "message": "Email or Password is invalid" }
 ```
 
 Status `401`.
@@ -226,15 +218,14 @@ Status `401`.
 ## 8.5 Login flow
 
 ```text
-POST /api/v1/login
-  ├─ validate username/password
-  ├─ load local user by username or email
+POST /api/v1/auth/login
+  ├─ validate email/password
+  ├─ load local user by email
   │    └─ missing → 401 invalid_credentials
   ├─ verify users.password hash (bcrypt)
   │    └─ fail → 401 invalid_credentials
   ├─ issue JWT access token and random refresh token
-  ├─ insert auths row: token, refresh hash, expiries, meta
-  └─ update last_login_at
+  └─ insert auths row: token, refresh hash, expiries, meta
 ```
 
 Token generation:
@@ -251,7 +242,6 @@ func newRefreshToken() (raw, hash string, err error) {
 }
 ```
 
-- `token_expires_at = now + JWT_ACCESS_TTL`; `refresh_expires_at = now + JWT_REFRESH_TTL`.
 - Only the hash is stored in `auths.refresh_token`; the raw value is returned to the client.
 - On refresh, hash the incoming token, find the row, issue a new JWT and a new refresh token, and update the same row.
 
@@ -265,9 +255,8 @@ LDAP is not used for login authentication. It remains for directory synchronizat
 - Support the existing server configs: `openldap`, `domino` (and any future servers).
 - Bind with the service account for search and sync jobs only; never validate user credentials at login.
 - Upsert local users from sync jobs:
-    - `username` from `uid` or configured attribute.
     - `email` from `mail`.
-    - `name` from `cn` or `displayName`.
+    - Login uses that email; there is no separate username column.
 - Local `users.password` (bcrypt) is the only login credential. Do not store or read LDAP passwords.
 - Map LDAP errors to `503` for sync failures; login must never depend on LDAP availability.
 
@@ -286,8 +275,9 @@ LDAP is not used for login authentication. It remains for directory synchronizat
     - `RequirePermission("manage_roles")`
     - `RequireRole("super admin")`
     - `RequireImpersonator()` for impersonation stop
-- `GET /me` returns the same `AuthUserResource` fields:
-    - `id`, `name`, `username`, `email`, `role`, `roles`, `permissions`, `created_at`, `formatted_created_at`, `email_verified_at`, `photo`, `verified`, `division`.
+- `GET /me` returns the current user fields available in this slice:
+    - `id`, `email`, `created_at`, `updated_at`.
+    - Role/permission fields are deferred with the RBAC tables.
 
 ## 8.8 Impersonation
 
@@ -328,7 +318,7 @@ Document the chosen option before implementing. Do not silently keep a broken fl
 
 | Limiter          | Key               | Limit     | Current   |
 | ---------------- | ----------------- | --------- | --------- |
-| `login`          | `lower(username)  | ip`       | 5/minute  | Yes |
+| `login`          | `lower(email)` or ip | 5/minute  | Yes |
 | `api`            | `user_id` or `ip` | 60/minute | Yes       |
 | Export endpoints | user              | 1/minute  | Per route |
 | Temp sync        | IP/user           | 2/minute  | Yes       |
@@ -339,11 +329,10 @@ Use a PostgreSQL-backed Fiber limiter (atomic upsert into `rate_limits`) so limi
 
 Current Laravel logout deletes all tokens for the user. Preserve this behavior:
 
-1. Increment `users.token_version`.
-2. Set `auths.revoked_at = now()` for every active row where `user_id = user.id` or `impersonator_id = user.id`.
-3. Return `{success: true, message: "Logged out successfully"}` from `lang.logged_out_successfully`.
+1. Set `auths.revoked_at = now()` for every active row where `user_id = user.id` or `impersonator_id = user.id`.
+2. Return `{success: true, message: "Logged out successfully"}` from `lang.logged_out_successfully`.
 
-Because `ver` is checked on every request, existing JWTs become invalid immediately without a growing blacklist. Per-session revocation of an impersonation token uses its `auths` row.
+Because every request checks `auths.revoked_at`, existing JWTs become invalid immediately without a growing blacklist. Per-session revocation of an impersonation token uses its `auths` row.
 
 ## 8.12 Frontend compatibility notes
 
@@ -351,4 +340,4 @@ Because `ver` is checked on every request, existing JWTs become invalid immediat
 - On `401`, the frontend dispatches `auth:unauthorized` and clears storage.
 - The access token TTL comes from `JWT_ACCESS_TTL`; keep the default at 3 hours so the current re-login behavior is unchanged.
 - A `/refresh` endpoint is available, but the current frontend does not call it. Adding a refresh interceptor is a separate frontend task.
-- The login screen submits username/password and stores the returned token directly; it must not branch on a second-factor response or render a QR/OTP form.
+- The login screen submits email/password and stores the returned token directly; it must not branch on a second-factor response or render a QR/OTP form.

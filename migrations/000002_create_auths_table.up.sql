@@ -5,8 +5,6 @@ CREATE TABLE IF NOT EXISTS auths (
     refresh_token      CHAR(64) NOT NULL,
     impersonator_id    BIGINT NULL REFERENCES users (id) ON DELETE SET NULL,
     meta               JSONB NULL,
-    token_expires_at   TIMESTAMPTZ NOT NULL,
-    refresh_expires_at TIMESTAMPTZ NOT NULL,
     revoked_at         TIMESTAMPTZ NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -15,6 +13,5 @@ CREATE TABLE IF NOT EXISTS auths (
 CREATE UNIQUE INDEX IF NOT EXISTS auths_token_idx ON auths (token);
 CREATE UNIQUE INDEX IF NOT EXISTS auths_refresh_token_idx ON auths (refresh_token);
 CREATE INDEX IF NOT EXISTS auths_user_revoked_idx ON auths (user_id, revoked_at);
-CREATE INDEX IF NOT EXISTS auths_refresh_expiry_idx ON auths (refresh_expires_at);
 CREATE INDEX IF NOT EXISTS auths_impersonator_idx ON auths (impersonator_id)
     WHERE impersonator_id IS NOT NULL;

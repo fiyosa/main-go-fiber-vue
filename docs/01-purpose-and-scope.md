@@ -24,4 +24,4 @@ This document is the implementation guide for rewriting the Laravel backend of A
 
 The frontend is the contract. Every request path, HTTP status, response envelope, field name, enum value, pagination shape, and file URL must stay compatible with the current frontend unless the document explicitly marks it as a change.
 
-**Auth exception:** the login endpoint intentionally drops LDAP credential checks and second-factor verification. The SPA must submit local username/password and store the returned token directly. All other paths, payloads, and envelopes remain compatible.
+**Auth exception:** the login endpoint intentionally drops LDAP credential checks and second-factor verification. The SPA must submit local email/password and store the returned token directly. All other paths, payloads, and envelopes remain compatible.

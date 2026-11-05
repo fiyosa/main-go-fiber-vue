@@ -1,21 +1,20 @@
-package repository
+package auth
 
 import (
 	"context"
 	"encoding/json"
 	"time"
 
-	"gorm.io/gorm"
-
+	"go-fiber-vue/internal/app/application/core/repository/user"
 	"go-fiber-vue/internal/app/domain/core/entity"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
-	"go-fiber-vue/internal/platform/auth"
+	platformauth "go-fiber-vue/internal/platform/auth"
 )
 
 // TokenService defines the JWT operations required by the login repository.
 // It is injected by the bootstrap so the repository stays decoupled from auth/platform.
 type TokenService interface {
-	IssueAccessToken(userID uint64, username string, tokenVersion int) (string, time.Time, error)
+	IssueAccessToken(userID uint64, email string) (string, error)
 	NewRefreshToken() (raw string, hash string, err error)
 	AccessTTL() time.Duration
 	RefreshTTL() time.Duration
@@ -34,42 +33,41 @@ type LoginResult struct {
 	ExpiresIn    int64
 }
 
-// AuthLoginRepository is the single interface for the POST /api/v1/auth/login
+// LoginRepository is the single interface for the POST /api/v1/auth/login
 // endpoint. It owns all business logic: credential check, JWT issue, and session
 // persistence. One file per API — no use-case layer.
-type AuthLoginRepository interface {
+type LoginRepository interface {
 	Login(ctx context.Context, identifier, password string, meta Meta) (*LoginResult, error)
 }
 
-// gormAuthLoginRepository is the GORM implementation of AuthLoginRepository.
-type gormAuthLoginRepository struct {
-	db     *gorm.DB
-	users  UserRepository
-	auths  AuthRepository
+// gormLoginRepository is the GORM implementation of LoginRepository.
+type gormLoginRepository struct {
+	users  user.Repository
+	auths  Repository
 	tokens TokenService
 }
 
-// NewAuthLoginRepository wires the login repository with its GORM implementation.
-// It requires the generic user and auth repositories so it can compose them.
-func NewAuthLoginRepository(db *gorm.DB, users UserRepository, auths AuthRepository, tokens TokenService) AuthLoginRepository {
-	return &gormAuthLoginRepository{db: db, users: users, auths: auths, tokens: tokens}
+// NewLoginRepository wires the login repository with its GORM implementation.
+// It composes the generic user and auth repositories.
+func NewLoginRepository(users user.Repository, auths Repository, tokens TokenService) LoginRepository {
+	return &gormLoginRepository{users: users, auths: auths, tokens: tokens}
 }
 
-// Login implements AuthLoginRepository.
-func (r *gormAuthLoginRepository) Login(ctx context.Context, identifier, password string, meta Meta) (*LoginResult, error) {
+// Login implements LoginRepository.
+func (r *gormLoginRepository) Login(ctx context.Context, email, password string, meta Meta) (*LoginResult, error) {
 	if r.users == nil || r.auths == nil || r.tokens == nil {
 		return nil, exceptions.ServiceUnavailable(nil)
 	}
 
-	user, err := r.users.FindByUsernameOrEmail(ctx, identifier)
+	account, err := r.users.FindByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	if user == nil || !auth.VerifyPassword(user.Password, password) {
+	if account == nil || !platformauth.VerifyPassword(account.Password, password) {
 		return nil, exceptions.Unauthorized("lang.invalid_credentials", nil)
 	}
 
-	accessToken, accessExpiresAt, err := r.tokens.IssueAccessToken(user.ID, user.Username, user.TokenVersion)
+	accessToken, err := r.tokens.IssueAccessToken(account.ID, account.Email)
 	if err != nil {
 		return nil, exceptions.Internal(err)
 	}
@@ -81,13 +79,11 @@ func (r *gormAuthLoginRepository) Login(ctx context.Context, identifier, passwor
 
 	now := time.Now().UTC()
 	row := &entity.Auth{
-		UserID:           user.ID,
-		Token:            accessToken,
-		RefreshToken:     refreshHash,
-		TokenExpiresAt:   accessExpiresAt,
-		RefreshExpiresAt: now.Add(r.tokens.RefreshTTL()),
-		CreatedAt:        now,
-		UpdatedAt:        now,
+		UserID:       account.ID,
+		Token:        accessToken,
+		RefreshToken: refreshHash,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	if meta.IP != "" || meta.UserAgent != "" {
@@ -101,7 +97,7 @@ func (r *gormAuthLoginRepository) Login(ctx context.Context, identifier, passwor
 		}
 	}
 
-	if err := r.auths.CreateSession(ctx, row, now); err != nil {
+	if err := r.auths.CreateSession(ctx, row); err != nil {
 		return nil, err
 	}
 

@@ -3,17 +3,15 @@ package entity
 import "time"
 
 type Auth struct {
-	ID               uint64     `gorm:"column:id;primaryKey"`
-	UserID           uint64     `gorm:"column:user_id;not null"`
-	Token            string     `gorm:"column:token;type:text;not null"`
-	RefreshToken     string     `gorm:"column:refresh_token;size:64;not null"`
-	ImpersonatorID   *uint64    `gorm:"column:impersonator_id"`
-	Meta             *string    `gorm:"column:meta;type:jsonb"`
-	TokenExpiresAt   time.Time  `gorm:"column:token_expires_at;not null"`
-	RefreshExpiresAt time.Time  `gorm:"column:refresh_expires_at;not null"`
-	RevokedAt        *time.Time `gorm:"column:revoked_at"`
-	CreatedAt        time.Time  `gorm:"column:created_at"`
-	UpdatedAt        time.Time  `gorm:"column:updated_at"`
+	ID             uint64     `gorm:"column:id;primaryKey"`
+	UserID         uint64     `gorm:"column:user_id;not null"`
+	Token          string     `gorm:"column:token;type:text;not null"`
+	RefreshToken   string     `gorm:"column:refresh_token;size:64;not null"`
+	ImpersonatorID *uint64    `gorm:"column:impersonator_id"`
+	Meta           *string    `gorm:"column:meta;type:jsonb"`
+	RevokedAt      *time.Time `gorm:"column:revoked_at"`
+	CreatedAt      time.Time  `gorm:"column:created_at"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at"`
 }
 
 func (Auth) TableName() string {

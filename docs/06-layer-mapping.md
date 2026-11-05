@@ -58,42 +58,34 @@ package entity
 import "time"
 
 type User struct {
-    ID                   uint64     `gorm:"column:id;primaryKey"`
-    Name                 string     `gorm:"column:name;size:255"`
-    Username             string     `gorm:"column:username;size:100;uniqueIndex"`
-    Email                string     `gorm:"column:email;size:255;index"`
-    Password             string     `gorm:"column:password;size:255"`
-    Role                 *string    `gorm:"column:role"`
-    DivisionID           *uint64    `gorm:"column:division_id"`
-    LastLoginAt          *time.Time `gorm:"column:last_login_at"`
-    CreatedAt            time.Time  `gorm:"column:created_at"`
-    UpdatedAt            time.Time  `gorm:"column:updated_at"`
+    ID        uint64    `gorm:"column:id;primaryKey"`
+    Email     string    `gorm:"column:email;size:255;not null;uniqueIndex"`
+    Password  string    `gorm:"column:password;size:255;not null"`
+    CreatedAt time.Time `gorm:"column:created_at"`
+    UpdatedAt time.Time `gorm:"column:updated_at"`
 }
 
 func (User) TableName() string { return "users" }
 ```
 
 ```go
-// internal/app/Application/core/repository/user_repository.go
-package repository
+// internal/app/application/core/repository/user/repository.go
+package user
 
 import (
     "context"
 
-    "go-fiber-vue/app/domain/core/entity"
+    "go-fiber-vue/internal/app/domain/core/entity"
 )
 
-type UserRepository interface {
-    FindByID(ctx context.Context, id uint64) (*entity.User, error)
-    FindByUsernameOrEmail(ctx context.Context, value string) (*entity.User, error)
-    Create(ctx context.Context, user *entity.User) error
-    Update(ctx context.Context, user *entity.User) error
+type Repository interface {
+    FindByEmail(ctx context.Context, email string) (*entity.User, error)
 }
 ```
 
 ```go
-// internal/app/Application/core/repository/gorm_user_repository.go
-package repository
+// internal/app/application/core/repository/user/repository.go
+package user
 
 import (
     "context"
@@ -101,38 +93,41 @@ import (
 
     "gorm.io/gorm"
 
-    "go-fiber-vue/app/domain/core/entity"
+    "go-fiber-vue/internal/app/domain/core/entity"
 )
 
-type gormUserRepository struct {
+type gormRepository struct {
     db *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
-    return &gormUserRepository{db: db}
+func NewRepository(db *gorm.DB) Repository {
+    if db == nil {
+        return nil
+    }
+    return &gormRepository{db: db}
 }
 
-func (r *gormUserRepository) FindByUsernameOrEmail(ctx context.Context, value string) (*entity.User, error) {
-    var user entity.User
+func (r *gormRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
+    var found entity.User
     err := r.db.WithContext(ctx).
-        Where("username = ? OR email = ?", value, value).
-        First(&user).Error
+        Where("email = ?", email).
+        First(&found).Error
     if errors.Is(err, gorm.ErrRecordNotFound) {
         return nil, nil
     }
-    return &user, err
+    return &found, err
 }
 ```
 
 ## 6.3 Example: request, controller, route
 
 ```go
-// internal/app/presentation/core/request/login_request.go
+// internal/app/presentation/core/request/auth_login_request.go
 package request
 
 type LoginRequest struct {
-    Username string `json:"username" validate:"required,string"`
-    Password string `json:"password" validate:"required,string"`
+    Email    string `json:"email" validate:"required,email"`
+    Password string `json:"password" validate:"required"`
 }
 ```
 

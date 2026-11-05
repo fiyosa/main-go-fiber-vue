@@ -11,16 +11,13 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"gorm.io/gorm"
 
-	"go-fiber-vue/internal/app/application/core/repository"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
-	"go-fiber-vue/internal/app/presentation/core/controllers"
 	"go-fiber-vue/internal/config"
 	"go-fiber-vue/internal/platform/auth"
 	"go-fiber-vue/internal/platform/database"
 	platformmiddleware "go-fiber-vue/internal/platform/http/middleware"
 	"go-fiber-vue/internal/platform/lang"
 	"go-fiber-vue/internal/routes"
-	v1 "go-fiber-vue/internal/routes/v1"
 )
 
 type Application struct {
@@ -35,9 +32,7 @@ type Application struct {
 // such as `routes` can introspect the routing table from any working
 // directory and without a live database.
 func Router(cfg *config.Config) *fiber.App {
-	loginRepo := repository.NewAuthLoginRepository(nil, nil, nil, nil)
-	authController := controllers.NewAuthController(loginRepo)
-	healthController := controllers.NewHealthController(nil)
+	deps := wireAPI(nil, nil, nil)
 
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
@@ -47,10 +42,7 @@ func Router(cfg *config.Config) *fiber.App {
 	app.Use(recover.New())
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
-	routes.RegisterAPI(app, v1.Dependencies{
-		AuthController:   authController,
-		HealthController: healthController,
-	})
+	routes.RegisterAPI(app, deps)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return app
@@ -86,21 +78,7 @@ func New(cfg *config.Config) (*Application, error) {
 		return nil, fmt.Errorf("init token service: %w", err)
 	}
 
-	var users repository.UserRepository
-	var auths repository.AuthRepository
-	if db != nil {
-		users = repository.NewUserRepository(db)
-		auths = repository.NewAuthRepository(db)
-	}
-
-	loginRepo := repository.NewAuthLoginRepository(db, users, auths, tokens)
-	authController := controllers.NewAuthController(loginRepo)
-
-	var pinger controllers.Pinger
-	if sqlDB != nil {
-		pinger = sqlDB
-	}
-	healthController := controllers.NewHealthController(pinger)
+	deps := wireAPI(db, sqlDB, tokens)
 
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
@@ -111,10 +89,7 @@ func New(cfg *config.Config) (*Application, error) {
 	app.Use(platformmiddleware.Locale(translator))
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
-	routes.RegisterAPI(app, v1.Dependencies{
-		AuthController:   authController,
-		HealthController: healthController,
-	})
+	routes.RegisterAPI(app, deps)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return &Application{

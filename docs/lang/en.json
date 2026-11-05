@@ -131,6 +131,6 @@
     "company": "Company",
     "workflow_approval_stage": "Workflow Approval Stage",
     "workflow_approval_stages": "Workflow Approval Stages",
-    "invalid_credentials": "Username or Password is invalid"
+    "invalid_credentials": "Email or Password is invalid"
   }
 }

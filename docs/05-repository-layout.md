@@ -178,7 +178,7 @@ Every folder under `internal/app/infrastructure/integrations` uses the same subf
 | Domain contract      | Not allowed; define the port in the consuming layer                     | —                                             |
 | Contract test        | `tests/contract`                                                        | `TestAuthLoginContract`                       |
 | Struct               | PascalCase                                                              | `User`, `AttendanceController`               |
-| Function             | camelCase, verb-first                                                   | `FindByUsername`, `StartAttendance`           |
+| Function             | camelCase, verb-first                                                   | `FindByEmail`, `StartAttendance`              |
 | Route file           | `<module>_routes.go`                                                    | `user_routes.go`, `attendance_routes.go`      |
 | Request DTO          | `<Action><Entity>Request`                                               | `StoreUserRequest`, `LoginRequest`            |
 | Response DTO         | `<Entity>Response`                                                      | `UserResponse`, `AuthUserResponse`            |

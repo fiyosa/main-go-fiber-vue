@@ -46,21 +46,13 @@ Place the resolver in `internal/platform/database`.
 
 ```go
 type UserFilter struct {
-    Search   *string
-    Role     *string
-    Division *uint64
+    Search *string
 }
 
 func (f UserFilter) Apply(db *gorm.DB) *gorm.DB {
     if f.Search != nil {
         like := "%" + *f.Search + "%"
-        db = db.Where("name LIKE ? OR username LIKE ? OR email LIKE ?", like, like, like)
-    }
-    if f.Role != nil {
-        db = db.Where("role = ?", *f.Role)
-    }
-    if f.Division != nil {
-        db = db.Where("division_id = ?", *f.Division)
+        db = db.Where("email LIKE ?", like)
     }
     return db
 }
@@ -75,7 +67,7 @@ err := db.Transaction(func(tx *gorm.DB) error {
     if err := tx.Create(&attendance).Error; err != nil {
         return err
     }
-    return tx.Model(&user).Update("last_login_at", time.Now()).Error
+    return tx.Create(&auditLog).Error
 })
 ```
 
@@ -87,7 +79,7 @@ err := db.Transaction(func(tx *gorm.DB) error {
 - Seeders: roles, permissions, menus, settings, email templates, and admin user. Seeders are idempotent and run through `console db seed`; initial auth data is defined in [Section 8.3.1](08-authentication.md#831-initial-auth-data).
 - Create an ERD section or link to one in `docs/`.
 - Add indexes for:
-    - `users.username`, `users.email`
+    - `users.email`
     - `attendances.user_id`, `attendances.date`
     - `activity_log.subject_type/subject_id`
     - `auths.token`, `auths.refresh_token`, `auths.user_id`

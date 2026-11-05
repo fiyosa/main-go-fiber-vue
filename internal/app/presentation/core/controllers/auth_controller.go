@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/gofiber/fiber/v3"
 
-	"go-fiber-vue/internal/app/application/core/repository"
+	"go-fiber-vue/internal/app/application/core/repository/auth"
 	"go-fiber-vue/internal/app/presentation/core/request"
 	"go-fiber-vue/internal/app/presentation/core/response"
 )
@@ -11,11 +11,11 @@ import (
 // AuthController handles /api/v1/auth/* endpoints.
 // All imports stay within: repository, request, response.
 type AuthController struct {
-	login repository.AuthLoginRepository
+	login auth.LoginRepository
 }
 
-// NewAuthController wires the login repository (repository.AuthLoginRepository).
-func NewAuthController(login repository.AuthLoginRepository) *AuthController {
+// NewAuthController wires the login repository (auth.LoginRepository).
+func NewAuthController(login auth.LoginRepository) *AuthController {
 	return &AuthController{login: login}
 }
 
@@ -28,9 +28,9 @@ func (c *AuthController) Login(fctx fiber.Ctx) error {
 
 	result, err := c.login.Login(
 		fctx.Context(),
-		req.Username,
+		req.Email,
 		req.Password,
-		repository.Meta{IP: fctx.IP(), UserAgent: fctx.Get("User-Agent")},
+		auth.Meta{IP: fctx.IP(), UserAgent: fctx.Get("User-Agent")},
 	)
 	if err != nil {
 		return err

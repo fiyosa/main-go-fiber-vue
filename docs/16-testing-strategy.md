@@ -15,7 +15,7 @@ Integration and end-to-end tests use a PostgreSQL `testcontainers-go` container 
 ## 16.2 Mandatory tests
 
 - Login success, invalid credentials.
-- JWT validation: signature, expiry, issuer, audience, `token_version`.
+- JWT validation: signature, expiry, issuer, audience.
 - Refresh rotation invalidates the previous hash; revoked or expired rows are rejected.
 - Logout invalidates all sessions.
 - Impersonation start/stop and `impersonator_id` enforcement.

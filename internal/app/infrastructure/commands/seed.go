@@ -31,14 +31,12 @@ func Seed() *cobra.Command {
 			defer sqlDB.Close()
 
 			if err := database.SeedAdmin(context.Background(), db,
-				database.DefaultAdminUsername,
 				database.DefaultAdminEmail,
 				database.DefaultAdminPassword,
 			); err != nil {
 				return err
 			}
-			fmt.Printf("seed complete: username=%s email=%s\n",
-				database.DefaultAdminUsername, database.DefaultAdminEmail)
+			fmt.Printf("seed complete: email=%s\n", database.DefaultAdminEmail)
 			return nil
 		},
 	}

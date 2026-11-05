@@ -84,7 +84,7 @@ The wrapper runs on the `net/http` side, before the SDK handler. Do not rely on 
 | -------------- | ---------- | --------------------------------------------------------------- |
 | `ping`         | any valid  | Returns server version and current time; verifies connectivity  |
 | `whoami`       | `mcp:read` | Returns the configured actor, scopes, and server version        |
-| `search_users` | `mcp:read` | Paginated user search by name, username, or email; max 50 rows  |
+| `search_users` | `mcp:read` | Paginated user search by email; max 50 rows                    |
 
 Add domain tools as modules reach parity. The MCP layer must not duplicate business rules; it calls the same use cases as the HTTP handlers.
 
