@@ -10,8 +10,14 @@
     { "action": "read", "resource": "*", "effect": "allow" },
     { "action": "read", "resource": "*.env*", "effect": "deny" },
     { "action": "read", "resource": "*.env.example", "effect": "allow" },
+
   	{ "action": "shell", "resource": "git push *", "effect": "deny" },
-  	{ "action": "shell", "resource": "*", "effect": "allow" }
+  	{ "action": "shell", "resource": "*", "effect": "allow" },
+
+    { "action": "skill", "resource": "caveman", "effect": "allow" },
+    { "action": "skill", "resource": "caveman-commit", "effect": "allow" },
+    { "action": "skill", "resource": "caveman-review", "effect": "allow" },
+    { "action": "skill", "resource": "caveman-help", "effect": "allow" }
   ],
   "mcp": {
     "servers": {
