@@ -39,8 +39,6 @@ jobs:
 
       - name: Deploy
         run: |
-          set -e
-
           chmod +x ./scripts/deploy.sh
           bash ./scripts/deploy.sh
 

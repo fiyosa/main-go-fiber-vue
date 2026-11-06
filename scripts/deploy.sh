@@ -13,7 +13,7 @@ podman rm main-app 2>/dev/null || true
 podman run -itd \
   --name main-app \
   --restart always \
-  -p 8000:8000 \
+  -p 8080:8080 \
   --env-file .env \
   main-app
 
