@@ -18,20 +18,24 @@ jobs:
         with:
           clean: false
 
+      - name: Pull branch master
+        run: |
+          git reset --hard
+          git pull
+
       - name: Check env file
         run: |
           if [ ! -f .env ]
           then
             echo ".env file not found on the server"
+            cp .env.example .env
             exit 1
           fi
 
       - name: Deploy
         run: |
           set -e
-          git reset --hard
 
-          git pull
           npm --prefix web ci
           npm --prefix web run build
 
