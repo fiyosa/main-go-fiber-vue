@@ -24,6 +24,11 @@ func RegisterWeb(app *fiber.App, publicDir string) {
 		},
 	}))
 
+	// The favicon lives at the root of public/ and is linked as /vite.svg.
+	app.Get("/vite.svg", func(c fiber.Ctx) error {
+		return c.SendFile(filepath.Join(publicDir, "vite.svg"))
+	})
+
 	// Every other non-API path renders the SPA shell so the frontend router
 	// can take over. Unknown API paths keep their JSON 404.
 	app.Get("/*", func(c fiber.Ctx) error {

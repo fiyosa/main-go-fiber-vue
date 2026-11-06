@@ -27,20 +27,21 @@ Plan: `.opencode/planning/tasks/plan.md`
 
 ## Phase 2 — Browser Tab Icon
 
-- [ ] Task 2: Serve `public/vite.svg` as the favicon
-  - [ ] Add `public/vite.svg` (official Vite logo)
-  - [ ] Add `<link rel="icon" type="image/svg+xml" href="/vite.svg" />` to `spa.html`
-  - [ ] Add the same link to `web/index.html`
-  - [ ] Add `GET /vite.svg` in `internal/routes/web.go` before the `/*` fallback
-  - [ ] Verify: `curl -i localhost:8080/vite.svg` -> 200 `image/svg+xml`
-  - [ ] Verify: unknown `/api/*` still returns JSON 404; other paths still return the SPA shell
-  - [ ] Verify: browser tab shows the icon
-  - [ ] Verify: `go build ./...`, `go vet ./...`, `go test ./...`
+- [x] Task 2: Serve `public/vite.svg` as the favicon
+  - [x] Add `public/vite.svg` (official Vite logo)
+  - [x] Add `<link rel="icon" type="image/svg+xml" href="/vite.svg" />` to `spa.html`
+  - [x] Add the same link to `web/index.html`
+  - [x] Add `GET /vite.svg` in `internal/routes/web.go` before the `/*` fallback
+  - [x] Add `internal/routes/web_test.go` covering favicon, SPA fallback, and API 404
+  - [x] Verify: `curl -i localhost:8080/vite.svg` -> 200 `image/svg+xml`
+  - [x] Verify: unknown `/api/*` still returns JSON 404; other paths still return the SPA shell
+  - [x] Verify: browser tab shows the icon
+  - [x] Verify: `go build ./...`, `go vet ./...`, `go test ./...`
 
 ### Checkpoint — Complete
 
-- [ ] `hello world` + favicon both work through the Go server
-- [ ] No changes under `docs/`, `tests/`, or `.github/`
+- [x] `hello world` + favicon both work through the Go server
+- [x] No changes under `docs/`, `tests/`, or `.github/`
 - [ ] Human approves; ready for `/build`
 
 ## Deferred

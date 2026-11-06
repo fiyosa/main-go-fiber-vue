@@ -101,30 +101,31 @@ public/vite.svg ──> spa.html + web/index.html <link rel="icon" href="/vite.s
 
 ### Phase 2: Browser Tab Icon
 
-- [ ] Task 2: Serve `public/vite.svg` as the browser tab icon
+- [x] Task 2: Serve `public/vite.svg` as the browser tab icon
   - Description: Add the Vite logo SVG at `public/vite.svg`, reference it from the embedded
     production shell and the Vite dev HTML, and register an explicit `GET /vite.svg` route in
     `internal/routes/web.go` before the SPA fallback.
   - Acceptance criteria:
-    - [ ] `public/vite.svg` exists and is valid SVG.
-    - [ ] `spa.html` and `web/index.html` include
+    - [x] `public/vite.svg` exists and is valid SVG.
+    - [x] `spa.html` and `web/index.html` include
       `<link rel="icon" type="image/svg+xml" href="/vite.svg" />`.
-    - [ ] `GET /vite.svg` returns `200` with `image/svg+xml` and the SVG body.
-    - [ ] `GET /api/v1/...` behavior is unchanged; unknown `/api/*` still returns JSON 404.
-    - [ ] `GET /some/unknown/path` still returns the SPA shell.
-    - [ ] Browser tab shows the Vite icon at `http://localhost:8080/`.
+    - [x] `GET /vite.svg` returns `200` with `image/svg+xml` and the SVG body.
+    - [x] `GET /api/v1/...` behavior is unchanged; unknown `/api/*` still returns JSON 404.
+    - [x] `GET /some/unknown/path` still returns the SPA shell.
+    - [x] Browser tab shows the Vite icon at `http://localhost:8080/`.
   - Verification:
-    - [ ] `curl -i http://localhost:8080/vite.svg`
-    - [ ] `curl -i http://localhost:8080/api/v1/nope`
-    - [ ] `curl -s http://localhost:8080/some/unknown/path | head`
-    - [ ] `go build ./...`, `go vet ./...`, `go test ./...`
-    - [ ] Manual browser check of the tab icon.
+    - [x] `curl -i http://localhost:8080/vite.svg`
+    - [x] `curl -i http://localhost:8080/api/v1/nope`
+    - [x] `curl -s http://localhost:8080/some/unknown/path | head`
+    - [x] `go build ./...`, `go vet ./...`, `go test ./...`
+    - [x] Manual browser check of the tab icon.
   - Dependencies: Task 1.
   - Files likely touched:
     - `public/vite.svg` (new)
     - `internal/app/presentation/core/view/spa.html`
     - `web/index.html`
     - `internal/routes/web.go`
+    - `internal/routes/web_test.go`
   - Estimated scope: Small (3–4 files).
 
 ### Checkpoint: Complete
