@@ -29,19 +29,21 @@ jobs:
           then
             echo ".env file not found on the server"
             cp .env.example .env
-            exit 1
+            # exit 1
           fi
+
+      - name: Build Frontend
+        run: |
+          npm --prefix web ci
+          npm --prefix web run build
 
       - name: Deploy
         run: |
           set -e
 
-          npm --prefix web ci
-          npm --prefix web run build
-
           go mod download
           CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
-          docker build -t portfolio -f Dockerfile .
+          podman build -t main-app -f Dockerfile .
 
           chmod +x ./scripts/deploy.sh
           bash ./scripts/deploy.sh
