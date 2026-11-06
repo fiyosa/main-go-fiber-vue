@@ -2,16 +2,21 @@
 set -e
 
 echo "Deploying..."
-docker stop main-app 2>/dev/null || true
-docker rm main-app 2>/dev/null || true
 
-docker run -itd \
+go mod download
+CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
+podman build -t main-app -f Dockerfile .
+
+podman stop main-app 2>/dev/null || true
+podman rm main-app 2>/dev/null || true
+
+podman run -itd \
   --name main-app \
   --restart always \
   -p 8000:8000 \
   --env-file .env \
   main-app
 
-docker image prune -f
+podman image prune -f
 
 printf "\nDeploy success"

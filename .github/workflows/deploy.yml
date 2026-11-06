@@ -41,10 +41,6 @@ jobs:
         run: |
           set -e
 
-          go mod download
-          CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
-          podman build -t main-app -f Dockerfile .
-
           chmod +x ./scripts/deploy.sh
           bash ./scripts/deploy.sh
 
