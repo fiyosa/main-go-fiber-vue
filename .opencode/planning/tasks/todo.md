@@ -7,21 +7,22 @@ Plan: `.opencode/planning/tasks/plan.md`
 
 ## Phase 1 — Hello World Slice
 
-- [ ] Task 1: Buildable Vue hello-world frontend served by Go
-  - [ ] `web/package.json` with Vue 3 + Vite + TypeScript; `dev` (:5173) and `build` scripts
-  - [ ] `web/vite.config.ts`: `outDir: '../public/build'`, input `src/main.ts`,
+- [x] Task 1: Buildable Vue hello-world frontend served by Go
+  - [x] `web/package.json` with Vue 3 + Vite + TypeScript; `dev` (:5173), `build`, and `test` scripts
+  - [x] `web/vite.config.ts`: `outDir: '../public/build'`, input `src/main.ts`,
         `entryFileNames: 'index.js'`, CSS -> `index.css`
-  - [ ] `web/index.html` for the dev server only; build emits no `index.html`
-  - [ ] `web/src/main.ts`, `web/src/App.vue` (renders exactly `hello world`), `web/src/style.css`
-  - [ ] `.gitignore` ignores `web/node_modules/` and `web/dist/`
-  - [ ] Verify: `npm --prefix web install` and `npm --prefix web run build` succeed
-  - [ ] Verify: `public/build/index.js` + `index.css` exist; no `index.html`
-  - [ ] Verify: `go run ./cmd/app`; browser at `:8080/` shows `hello world`
-  - [ ] Verify: `go build ./...`, `go vet ./...`, `gofmt -l` clean
+  - [x] `web/index.html` for the dev server only; build emits no `index.html`
+  - [x] `web/src/main.ts`, `web/src/App.vue` (renders exactly `hello world`), `web/src/style.css`
+  - [x] `web/src/App.test.ts` (Vitest + Vue Test Utils) proves the render
+  - [x] `.gitignore` ignores `web/node_modules/` and `web/dist/`
+  - [x] Verify: `npm --prefix web install` and `npm --prefix web run build` succeed
+  - [x] Verify: `public/build/index.js` + `index.css` exist; no `index.html`
+  - [x] Verify: `go run ./cmd/app`; browser at `:8080/` shows `hello world`
+  - [x] Verify: `go build ./...`, `go vet ./...`, `gofmt -l` clean
 
 ### Checkpoint — Hello World
 
-- [ ] Frontend builds; Go serves it; page shows `hello world`
+- [x] Frontend builds; Go serves it; page shows `hello world`
 - [ ] Human confirms layout before favicon work
 
 ## Phase 2 — Browser Tab Icon

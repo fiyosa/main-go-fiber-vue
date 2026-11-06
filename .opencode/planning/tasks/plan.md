@@ -57,25 +57,27 @@ public/vite.svg ──> spa.html + web/index.html <link rel="icon" href="/vite.s
 
 ### Phase 1: Hello World Slice
 
-- [ ] Task 1: Buildable Vue hello-world frontend served by Go
+- [x] Task 1: Buildable Vue hello-world frontend served by Go
   - Description: Scaffold `web/` with Vue 3 + TypeScript + Vite. Configure Vite to build
     `src/main.ts` into `../public/build` as `index.js` and `index.css`. The app renders exactly
     `hello world`. Run the production build and confirm the existing Go server serves it through
     the embedded shell.
   - Acceptance criteria:
-    - [ ] `web/package.json` defines `dev` (port 5173) and `build` scripts; deps are `vue`,
-      `vite`, `@vitejs/plugin-vue`, `typescript`, `vue-tsc`.
-    - [ ] `npm --prefix web run build` exits 0 and writes `public/build/index.js`,
+    - [x] `web/package.json` defines `dev` (port 5173) and `build` scripts; deps are `vue`,
+      `vite`, `@vitejs/plugin-vue`, `typescript`, `vue-tsc`, plus `vitest`, `@vue/test-utils`,
+      `jsdom` for the render test.
+    - [x] `npm --prefix web run build` exits 0 and writes `public/build/index.js`,
       `public/build/index.css`, and any extras under `public/build/assets/`.
-    - [ ] Build does **not** write `public/build/index.html`.
-    - [ ] `go run ./cmd/app` then `GET /` returns the SPA shell, and the loaded app shows
+    - [x] Build does **not** write `public/build/index.html`.
+    - [x] `go run ./cmd/app` then `GET /` returns the SPA shell, and the loaded app shows
       `hello world` with no console errors.
-    - [ ] `go build ./...`, `go vet ./...`, and `gofmt -l` remain clean.
+    - [x] `go build ./...`, `go vet ./...`, and `gofmt -l` remain clean.
   - Verification:
-    - [ ] `npm --prefix web install`
-    - [ ] `npm --prefix web run build`
-    - [ ] `go run ./cmd/app` + browser at `http://localhost:8080/`
-    - [ ] `curl -s http://localhost:8080/build/index.js | head`
+    - [x] `npm --prefix web install`
+    - [x] `npm --prefix web test`
+    - [x] `npm --prefix web run build`
+    - [x] `go run ./cmd/app` + browser at `http://localhost:8080/`
+    - [x] `curl -s http://localhost:8080/build/index.js | head`
   - Dependencies: None.
   - Files likely touched:
     - `web/package.json`
@@ -84,6 +86,8 @@ public/vite.svg ──> spa.html + web/index.html <link rel="icon" href="/vite.s
     - `web/index.html` (dev server only)
     - `web/src/main.ts`
     - `web/src/App.vue`
+    - `web/src/App.test.ts`
+    - `web/src/env.d.ts`
     - `web/src/style.css`
     - `.gitignore`
   - Estimated scope: Medium (5–8 files).
