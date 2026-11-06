@@ -1,217 +1,157 @@
-# Implementation Plan: Slice 1 — Minimal Login API
+# Implementation Plan: Minimal Frontend — Hello World + Vite Favicon
 
 ## Overview
 
-This plan supersedes the Phase 0 ordering in `SPEC.md`. The first deliverable is one public
-endpoint, `POST /api/v1/auth/login`, backed only by the `users` and `auths` tables. There is no RBAC,
-no roles/permissions/menus, no LDAP, no 2FA, and no SSO.
+Deliver the smallest working Vue 3 + Vite frontend for the existing Go/Fiber app. The page
+renders only `hello world`, and the browser tab uses a favicon served from `public/vite.svg`.
 
-Login verifies the local `users.password` hash (bcrypt cost 12), then issues:
+The Go side already owns the HTML shell (`internal/app/presentation/core/view/spa.html`, embedded
+as `view.SPA`) and serves `/build/*` from `public/build`. This plan fills the empty `web/` source
+folder, configures Vite to emit the flat artifact layout the Go server expects, and adds one
+static route for the root-level favicon.
 
-- an HS256 JWT access token (`JWT_ACCESS_TTL`, default 3h) with `iss`, `aud`, `sub`, `email`,
-  `jti`, `iat`, `exp`;
-- an opaque refresh token (`JWT_REFRESH_TTL`, default 30d), returned once and stored as a
-  SHA-256 hex hash in `auths.refresh_token`.
-
-The token response shape stays compatible with the SPA: top-level `token`, `token_type`,
-`expires_in`, and `refresh_token`. The rest of Phase 0 (health, jobs, sample module) is reduced
-to only what this slice needs.
-
-Current state: `go.mod` exists (`module go-fiber-vue`, Go 1.27.3) and the folder spine exists.
-No Go source files exist yet. `tests/` and `.github/` remain intentionally absent.
+Out of scope: routing, API calls, state management, styling system, tests directory, CI, auth UI.
 
 ## Architecture Decisions
 
-- New PostgreSQL schema; only `users` (`id`, `email`, `password`, timestamps) and `auths` tables
-  (plus indexes). No RBAC tables.
-- Revocation uses `auths.revoked_at`; there is no `users.token_version` column.
-- Refresh tokens: 256-bit random, base64url; only the hex SHA-256 is stored.
-- One `auths` row per login: `token` (JWT), `refresh_token` (hash), expiries, `meta`, `revoked_at`.
-- Login is a public route. No auth or permission middleware is attached to it.
-- JWT signing: HS256 with a shared `JWT_SECRET`. Issuer (`app-api`) and audience
-  (`app-spa`) are fixed in code, not environment variables.
-  Never commit keys.
-- The login endpoint does not require `roles`/`permissions`; `GET /me` is out of scope for this
-  slice.
-- A minimal seeder creates one user from defaults in code (`admin@example.com`).
-- `tests/` is deferred; use package-local `_test.go` files and manual `curl` until enabled.
-- Postgres is required to run the endpoint. If no DSN is available, verification stops at
-  build + unit tests with fake repositories.
+- **Vue 3 + TypeScript + Vite in `web/`**, per `docs/13-frontend-delivery.md`.
+- **Vite output goes straight to `../public/build`** with fixed entry names:
+  `index.js`, `index.css`, and hashed extras under `assets/`. The Go shell links those names.
+- **`web/index.html` exists only for the Vite dev server** on `:5173`; the production shell stays
+  in `spa.html`, so the Vite build must not emit its own `index.html`.
+- **Build input is `src/main.ts`, not `index.html`**, which prevents an emitted `index.html`
+  from overwriting the Go-owned shell contract.
+- **Favicon lives at `public/vite.svg`** (repo root, not `web/public`) and is referenced as
+  `/vite.svg` from both HTML shells.
+- **Go serves `/vite.svg` explicitly** via `c.SendFile(filepath.Join(publicDir, "vite.svg"))`,
+  registered before the `/*` SPA fallback. No broad root static mount is added.
+- **No docs edits.** `docs/` is read-only per the spec; this plan follows the documented layout.
+- **`public/build` stays gitignored**; the UI must be built locally or by a future CI step.
+  Add `web/node_modules/` and `web/dist/` to `.gitignore`.
 
 ## Dependency Graph
 
 ```text
-config (env) ──> DB pool ──> migrations (users, auths) ──> seed user
-     │                                                        │
-     ├──> JWT + refresh token service ──┐                     │
-     │                                  │                     │
-     └──> bcrypt password verifier ─────┼──> login usecase <──┘ (user lookup by email)
-                                        │         │
-                                        │         └──> auths insert (refresh hash)
-                                        │                     │
-                                        └──> controller ──> route POST /api/v1/auth/login
+web/package.json + tsconfig
+        │
+        └──> vite.config.ts (outDir ../public/build, flat names, :5173 proxy)
+                 │
+                 └──> src/main.ts -> App.vue -> style.css
+                          │
+                          └──> npm run build
+                                   │
+                                   └──> public/build/index.js + index.css (+ assets/*)
+                                            │
+                                            └──> Go RegisterWeb (/build static)
+                                                     │
+                                                     └──> embedded spa.html
                                                               │
-                                                              └──> Fiber runtime
+                                                              └──> browser shows "hello world"
+
+public/vite.svg ──> spa.html + web/index.html <link rel="icon" href="/vite.svg">
+                        │
+                        └──> Go route GET /vite.svg ──> browser tab icon
 ```
 
 ## Task List
 
-### Phase 1: Runtime and Data Foundation
+### Phase 1: Hello World Slice
 
-- [ ] Task 1: Minimal bootable runtime, config, and DB pool
-  - Description: Add `cmd/app` and `cmd/console`, typed env config, slog, an `errgroup` runtime,
-    a Fiber server with `GET /healthz` and `GET /readyz`, and a GORM/pgx PostgreSQL pool.
-  - Acceptance:
-    - [ ] `go build ./...` and `go vet ./...` pass.
-    - [ ] `GET /healthz` returns 200.
-    - [ ] `GET /readyz` returns 200 with a reachable DB and 503 JSON without one.
-    - [ ] SIGINT/SIGTERM exits cleanly.
-  - Verify: build/vet; `go run ./cmd/app`; `curl -i localhost:8080/healthz`; Ctrl+C.
-  - Dependencies: none.
-  - Files: `cmd/app/main.go`, `cmd/console/main.go`, `internal/config/config.go`,
-    `internal/bootstrap/app.go`, `internal/bootstrap/runtime.go`,
-    `internal/bootstrap/database.go`, `internal/platform/database/database.go`,
-    `internal/routes/api.go`, `internal/app/presentation/core/routes/health_routes.go`.
-  - Scope: Medium (5–8 files).
+- [ ] Task 1: Buildable Vue hello-world frontend served by Go
+  - Description: Scaffold `web/` with Vue 3 + TypeScript + Vite. Configure Vite to build
+    `src/main.ts` into `../public/build` as `index.js` and `index.css`. The app renders exactly
+    `hello world`. Run the production build and confirm the existing Go server serves it through
+    the embedded shell.
+  - Acceptance criteria:
+    - [ ] `web/package.json` defines `dev` (port 5173) and `build` scripts; deps are `vue`,
+      `vite`, `@vitejs/plugin-vue`, `typescript`, `vue-tsc`.
+    - [ ] `npm --prefix web run build` exits 0 and writes `public/build/index.js`,
+      `public/build/index.css`, and any extras under `public/build/assets/`.
+    - [ ] Build does **not** write `public/build/index.html`.
+    - [ ] `go run ./cmd/app` then `GET /` returns the SPA shell, and the loaded app shows
+      `hello world` with no console errors.
+    - [ ] `go build ./...`, `go vet ./...`, and `gofmt -l` remain clean.
+  - Verification:
+    - [ ] `npm --prefix web install`
+    - [ ] `npm --prefix web run build`
+    - [ ] `go run ./cmd/app` + browser at `http://localhost:8080/`
+    - [ ] `curl -s http://localhost:8080/build/index.js | head`
+  - Dependencies: None.
+  - Files likely touched:
+    - `web/package.json`
+    - `web/vite.config.ts`
+    - `web/tsconfig.json`
+    - `web/index.html` (dev server only)
+    - `web/src/main.ts`
+    - `web/src/App.vue`
+    - `web/src/style.css`
+    - `.gitignore`
+  - Estimated scope: Medium (5–8 files).
 
-- [ ] Task 2: Schema and seed user
-  - Description: Add SQL migrations for `users` and `auths`, `console migrate`/`migrate status`,
-    and an idempotent admin seeder that hashes the password with bcrypt cost 12.
-  - Acceptance:
-    - [ ] Up/down migrations create and drop `users` and `auths` with the documented indexes.
-    - [ ] `users` stores only `id`, `email`, `password`, and timestamps.
-    - [ ] `console migrate status` reports the current version.
-    - [ ] `console db seed` creates exactly one admin and refuses empty/short passwords.
-  - Verify: run against a Postgres DSN; inspect `users` and `auths`; rerun seed (no duplicates).
+### Checkpoint: Hello World
+
+- [ ] Frontend builds without errors.
+- [ ] Go server serves the built app.
+- [ ] Browser displays `hello world`.
+- [ ] Human confirms the page and build layout before adding the favicon.
+
+### Phase 2: Browser Tab Icon
+
+- [ ] Task 2: Serve `public/vite.svg` as the browser tab icon
+  - Description: Add the Vite logo SVG at `public/vite.svg`, reference it from the embedded
+    production shell and the Vite dev HTML, and register an explicit `GET /vite.svg` route in
+    `internal/routes/web.go` before the SPA fallback.
+  - Acceptance criteria:
+    - [ ] `public/vite.svg` exists and is valid SVG.
+    - [ ] `spa.html` and `web/index.html` include
+      `<link rel="icon" type="image/svg+xml" href="/vite.svg" />`.
+    - [ ] `GET /vite.svg` returns `200` with `image/svg+xml` and the SVG body.
+    - [ ] `GET /api/v1/...` behavior is unchanged; unknown `/api/*` still returns JSON 404.
+    - [ ] `GET /some/unknown/path` still returns the SPA shell.
+    - [ ] Browser tab shows the Vite icon at `http://localhost:8080/`.
+  - Verification:
+    - [ ] `curl -i http://localhost:8080/vite.svg`
+    - [ ] `curl -i http://localhost:8080/api/v1/nope`
+    - [ ] `curl -s http://localhost:8080/some/unknown/path | head`
+    - [ ] `go build ./...`, `go vet ./...`, `go test ./...`
+    - [ ] Manual browser check of the tab icon.
   - Dependencies: Task 1.
-  - Files: `migrations/000001_create_users_table.up.sql` (+ `.down.sql`),
-    `migrations/000002_create_auths_table.up.sql` (+ `.down.sql`),
-    `internal/platform/database/migrate.go`, `internal/platform/database/seed.go`,
-    `cmd/console/main.go`.
-  - Scope: Medium (5–6 files).
+  - Files likely touched:
+    - `public/vite.svg` (new)
+    - `internal/app/presentation/core/view/spa.html`
+    - `web/index.html`
+    - `internal/routes/web.go`
+  - Estimated scope: Small (3–4 files).
 
-### Checkpoint A (after Tasks 1–2)
+### Checkpoint: Complete
 
-- [ ] Build and vet pass.
-- [ ] Migrations apply and roll back cleanly.
-- [ ] One seeded user exists; `auths` is empty until login.
-- [ ] Human reviews the schema before auth code.
-
-### Phase 2: Auth Primitives and Use Case
-
-- [ ] Task 3: Password, JWT, and refresh-token services
-  - Description: Add a bcrypt verifier (cost 12), an HS256 JWT issuer/verifier with the claims
-    above, and a refresh-token generator that returns raw + SHA-256 hash.
-  - Acceptance:
-    - [ ] Correct password verifies; wrong password fails.
-    - [ ] JWT round-trips; wrong `aud`/`iss`/expired token is rejected.
-    - [ ] Refresh token is 256-bit and its hash is stable.
-  - Verify: package-local `_test.go` with a fixed test secret.
-  - Dependencies: Task 1.
-  - Files: `internal/platform/auth/password.go`, `internal/platform/auth/jwt.go`,
-    `internal/platform/auth/refresh.go`, `internal/platform/auth/*_test.go`.
-  - Scope: Medium (4–5 files).
-
-- [ ] Task 4: Login use case with repositories
-  - Description: Add `User` and `Auth` entities, `UserRepository` and `AuthRepository`
-    (interfaces + GORM implementations), and a `LoginUseCase` that validates credentials,
-    issues tokens, and inserts an `auths` row.
-  - Acceptance:
-    - [ ] Valid credentials return access + refresh tokens and create one `auths` row.
-    - [ ] Unknown user or wrong password returns `ErrInvalidCredentials`.
-    - [ ] The JWT contains the user's `email` and no permission/scope claims.
-    - [ ] No LDAP or 2FA branch exists.
-  - Verify: table-driven use-case tests with fake repositories.
-  - Dependencies: Tasks 2, 3.
-  - Files: `internal/app/domain/core/entity/user.go`,
-    `internal/app/domain/core/entity/auth.go`,
-    `internal/app/application/core/repository/user_repository.go`,
-    `internal/app/application/core/repository/auth_repository.go`,
-    `internal/app/application/core/usecase/login_usecase.go`,
-    `internal/app/application/core/usecase/login_usecase_test.go`.
-  - Scope: Medium (5–6 files).
-
-### Checkpoint B (after Tasks 3–4)
-
-- [ ] Auth primitives and use-case tests pass.
-- [ ] No RBAC or permission code exists.
-- [ ] Human reviews the token claims and `auths` row shape.
-
-### Phase 3: HTTP Login Slice
-
-- [ ] Task 5: `POST /api/v1/auth/login` end-to-end
-  - Description: Add the login request DTO, controller, response DTO, and public route; wire the
-    real GORM repositories and the login use case through bootstrap.
-  - Acceptance:
-    - [ ] Valid login returns 200 with `success`, `message`, `token`, `token_type: "Bearer"`,
-      `expires_in`, `refresh_token`.
-    - [ ] Invalid credentials return 401 `{success:false, message:"Invalid credentials."}`.
-    - [ ] Missing fields return 422 with field errors.
-    - [ ] The route is public and has no permission middleware.
-    - [ ] An `auths` row is written.
-  - Verify: `curl -i -X POST localhost:8080/api/v1/auth/login` with valid and invalid bodies;
-    focused package tests.
-  - Dependencies: Task 4.
-  - Files: `internal/app/presentation/core/request/login_request.go`,
-    `internal/app/presentation/core/controllers/auth_controller.go`,
-    `internal/app/presentation/core/response/login_response.go`,
-    `internal/app/presentation/core/routes/auth_routes.go`,
-    `internal/routes/v1/apiv1.go`, `internal/bootstrap/app.go`.
-  - Scope: Medium (5–6 files).
-
-### Phase 4: Localization Contract (docs/20)
-
-- [x] Task 6: Translated response messages
-  - Description: Copy the reviewed catalogues from `docs/lang/` to `lang/`, add the runtime
-    translator, the locale middleware, and make every response helper accept a translation
-    key instead of a literal.
-  - Acceptance:
-    - [ ] `internal/lang/en.json` and `internal/lang/id.json` have identical key sets (enforced at load).
-    - [x] `?lang=` beats `Accept-Language`, which beats `APP_LOCALE`; unsupported values fall
-      back to `en`.
-    - [x] `APP_LOCALE` must be `en` or `id`, otherwise startup fails.
-    - [x] `message` is present and non-empty on success, validation, auth, and 404/500 errors.
-    - [x] Validation field messages use `validation.*` keys with `:attribute`.
-  - Verify: `go test ./...`; manual `curl` with `Accept-Language: id`.
-  - Dependencies: Task 1.
-  - Files: `internal/lang/en.json`, `internal/lang/id.json`, `internal/platform/lang/translator.go`,
-    `internal/app/presentation/core/middleware/locale.go`,
-    `internal/app/infrastructure/support/helpers/response.go`,
-    `internal/app/infrastructure/support/helpers/validation.go`, `internal/bootstrap/app.go`.
-  - Scope: Medium (8 files incl. tests).
-
-### Checkpoint C (after Tasks 5–6)
-
-- [ ] Login works end-to-end against Postgres.
-- [x] `go build ./...`, `go vet ./...`, and `go test ./...` pass.
-- [x] Every response path returns a translated, non-empty `message`.
-- [ ] Human confirms the response shape before any other endpoint is added.
+- [ ] Both tasks' acceptance criteria met.
+- [ ] `hello world` renders from the Go-served production shell.
+- [ ] Favicon loads from `/vite.svg` in the browser tab.
+- [ ] No changes under `docs/`, `tests/`, or `.github/`.
+- [ ] Human reviews before `/build` starts.
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| No Postgres/Docker locally | High | Migrations + use-case tests first; manual login needs a DSN |
-| JWT secret handling | High | Single `JWT_SECRET`; long random value; never commit it |
-| `tests/` deferred | Medium | Package-local tests + curl; migrate later |
-| Token response parity | Medium | Match docs/08 exactly; golden test when `tests/` exists |
-| `internal/lang/` missing at runtime | High | Startup fails with an explicit error; deployment must copy `lang/` |
-| Seeder password safety | Medium | Require ≥12 chars; reject known defaults; bcrypt cost 12 |
-| bcrypt cost 12 latency | Low | Accept for login; do not raise without measurement |
-| Single-process shutdown | Low | `errgroup` + bounded shutdown from Task 1 |
-
-## Parallelization Opportunities
-
-- Task 3 (auth primitives) can start once Task 1 config is stable; it does not need the DB.
-- Task 2 (migrations) and Task 3 can run in parallel after Task 1.
-- Task 4 depends on both; Task 5 depends on Task 4.
-- Do not parallelize schema changes with repository code without a shared schema contract.
+| `public/vite.svg` does not exist yet | High | Task 2 creates it with the official Vite logo SVG; confirm with the human first |
+| Vite default build emits hashed `assets/index-*.js` and an `index.html` | High | Set `rollupOptions.input = 'src/main.ts'` and fixed `entryFileNames`/`assetFileNames` |
+| `/vite.svg` currently hits the `/*` SPA fallback and returns HTML | High | Register the explicit static route before the fallback |
+| Dev server (`:5173`) cannot read root `public/vite.svg` | Medium | Proxy `/vite.svg` to the Go API in `server.proxy`, or accept the icon only in the Go-served app |
+| `public/build` is gitignored, so a fresh clone has no assets | Medium | Document/keep the `npm --prefix web run build` step; CI is deferred |
+| Node/npm version mismatch | Low | Toolchain is Node 24 / npm 11, matching the spec |
 
 ## Open Questions
 
-1. Should `JWT_SECRET` rotation (two active secrets) be added before production?
-2. Add `POST /api/v1/auth/refresh` now or defer until after login works?
-3. Retention defaults for `auths`.
-4. Where will the Postgres DSN come from for manual verification?
-5. Seed credentials: keep defaults in code (`admin@example.com`) or move them to env?
-6. When should `tests/` and `.github/` be enabled?
+1. `./public/vite.svg` is not present in the repo. May Task 2 create it using the official Vite
+   logo SVG? (Assumed yes; otherwise provide the file.)
+2. Is plain unstyled `hello world` text enough, or should it get minimal centering/typography?
+   (Plan assumes plain.)
+3. Should the favicon also appear in the Vite dev server at `:5173` via a proxy? (Plan assumes yes.)
+
+## Parallelization Opportunities
+
+- Task 1 and the creation of `public/vite.svg` can happen in parallel; the favicon link and Go
+  route (Task 2) depend on both.
+- Do not parallelize changes to `internal/routes/web.go` with other routing work.
