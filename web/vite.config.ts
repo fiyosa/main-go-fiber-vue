@@ -1,34 +1,51 @@
-import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url'
+
 import vue from '@vitejs/plugin-vue'
+import { loadEnv } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // The Go app owns the HTML shell, so the build input is the entry module
 // instead of an index.html file and the output keeps fixed flat names.
-export default defineConfig({
-  plugins: [vue()],
-  publicDir: false,
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': 'http://localhost:8080',
+const repoRoot = fileURLToPath(new URL('..', import.meta.url))
+const publicDir = fileURLToPath(new URL('../public', import.meta.url))
+
+export default defineConfig(({ mode }) => {
+  // Read the single .env at the repository root so the frontend and the Go
+  // backend share the same configuration.
+  const env = loadEnv(mode, repoRoot, '')
+  const apiTarget = `http://localhost:${env.APP_PORT || '8080'}`
+
+  return {
+    plugins: [vue()],
+    envDir: repoRoot,
+    publicDir,
+    server: {
+      port: 5173,
+      proxy: {
+        '/api': apiTarget,
+      },
     },
-  },
-  build: {
-    outDir: '../public/build',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: 'src/main.ts',
-      output: {
-        entryFileNames: 'index.js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          return assetInfo.name?.endsWith('.css')
-            ? 'index.css'
-            : 'assets/[name]-[hash][extname]'
+    build: {
+      outDir: '../public/build',
+      emptyOutDir: true,
+      // The Go server already serves every file in public/ (including
+      // vite.svg), so copying publicDir into outDir would only duplicate it.
+      copyPublicDir: false,
+      rollupOptions: {
+        input: 'src/main.ts',
+        output: {
+          entryFileNames: 'index.js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            return assetInfo.name?.endsWith('.css')
+              ? 'index.css'
+              : 'assets/[name]-[hash][extname]'
+          },
         },
       },
     },
-  },
-  test: {
-    environment: 'jsdom',
-  },
+    test: {
+      environment: 'jsdom',
+    },
+  }
 })
