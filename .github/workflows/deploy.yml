@@ -29,7 +29,6 @@ jobs:
       - name: Deploy
         run: |
           set -e
-          cd /root/docker/go-fiber-vue
           git reset --hard
 
           git pull

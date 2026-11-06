@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+tmp
+logs
+.env
+.vscode
+.idea
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
