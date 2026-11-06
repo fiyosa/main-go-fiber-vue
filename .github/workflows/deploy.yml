@@ -37,7 +37,7 @@ jobs:
           pnpm -C web run build
           go mod download
           CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
-          docker build -t portfolio -f build/package/Dockerfile .
+          docker build -t portfolio -f Dockerfile .
           chmod +x ./scripts/deploy.sh
           bash ./scripts/deploy.sh
 
