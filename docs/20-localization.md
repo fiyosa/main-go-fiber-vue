@@ -10,7 +10,7 @@ Every JSON API response must contain a non-empty `message`. The message is trans
 - Unknown locale falls back to `en`.
 - A missing key returns the key itself and writes a warning log. There is no fallback-locale configuration.
 
-The catalogue in `docs/lang/` is the review copy. The Go runtime loads the same files from `internal/lang/`.
+The catalogue in `docs/lang/` is the review copy. The Go runtime loads the same files from `lang/`.
 
 ## 20.2 Configuration
 
@@ -37,7 +37,7 @@ lang.retrieved -> lang.en.json -> { "lang": { "retrieved": ":operator Retrieved"
 Files:
 
 ```text
-internal/lang/
+lang/
 ├── en.json
 └── id.json
 ```
@@ -104,12 +104,12 @@ Loading:
 ```text
 cmd/app/main.go
   -> bootstrap.Config loads APP_LOCALE
-  -> bootstrap.newTranslator loads internal/lang/en.json and internal/lang/id.json
+  -> bootstrap.newTranslator loads lang/en.json and lang/id.json
   -> translator is stored in Dependencies
   -> helpers and controllers receive the same instance
 ```
 
-The loader looks for the catalogues in this order and uses the first directory that exists: `internal/lang`, `<binary dir>/internal/lang`, `<binary dir>/lang`. Deployment must keep one of them next to the binary. Hot reload is not supported; restart the process after changing translations.
+The loader looks for the catalogues in this order and uses the first directory that exists: `lang`, `<binary dir>/lang`. Deployment must keep one of them next to the binary. Hot reload is not supported; restart the process after changing translations.
 
 ## 20.5 Locale resolution
 
@@ -238,7 +238,7 @@ Known hard-coded messages to migrate include controller strings such as `Aux typ
 
 ## 20.11 Adding a language
 
-1. Add `internal/lang/<code>.json` with the same key set as `en.json`.
+1. Add `lang/<code>.json` with the same key set as `en.json`.
 2. Add the code to the supported-locale allowlist.
 3. Add it to the locale middleware tests.
 4. A new language is complete only when its catalogue is complete.

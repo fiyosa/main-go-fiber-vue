@@ -14,6 +14,6 @@
 | RBAC              | Four user-only tables: `roles`, `permissions`, `user_has_roles`, `role_has_permissions`; no guard/model type |
 | Database          | New schema; no legacy data or encryption compatibility                                                      |
 | Document language | English                                                                                                     |
-| API messages      | Every JSON response has a translated `message`; default `en`, `id` supported; catalogue in `internal/lang/*.json`     |
+| API messages      | Every JSON response has a translated `message`; default `en`, `id` supported; catalogue in `lang/*.json`     |
 | Domain rename     | `alma` → `core` in Go folders, packages, and identifiers                                                    |
 | API compatibility | Paths, payloads, status codes, and response envelopes preserved except the login and second-factor removals |

@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY app .
 
+COPY lang/ ./lang/
 COPY public/ ./public/
 
 EXPOSE 8080

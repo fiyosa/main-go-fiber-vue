@@ -109,13 +109,10 @@ func newTranslator(cfg *config.Config) (*lang.Translator, error) {
 }
 
 func localeDir() (string, error) {
-	candidates := []string{filepath.Join("internal", "lang")}
+	candidates := []string{filepath.Join("lang")}
 	if executable, err := os.Executable(); err == nil {
 		base := filepath.Dir(executable)
-		candidates = append(candidates,
-			filepath.Join(base, "internal", "lang"),
-			filepath.Join(base, "lang"),
-		)
+		candidates = append(candidates, filepath.Join(base, "lang"))
 	}
 	for _, candidate := range candidates {
 		info, err := os.Stat(candidate)
