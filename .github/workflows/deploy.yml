@@ -1,0 +1,44 @@
+name: Deployment
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      RUNNER_TRACKING_ID: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Check env file
+        run: |
+          if [ ! -f .env ]
+          then
+            echo ".env file not found on the server"
+            exit 1
+          fi
+
+      - name: Deploy
+        run: |
+          set -e
+          cd /root/docker/go-fiber-vue
+          git reset --hard
+
+          git pull
+          pnpm -C web i
+          pnpm -C web run build
+          go mod download
+          CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
+          docker build -t portfolio -f build/package/Dockerfile .
+          chmod +x ./scripts/deploy.sh
+          bash ./scripts/deploy.sh
+
+          git reset --hard
