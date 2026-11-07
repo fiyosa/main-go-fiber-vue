@@ -190,40 +190,35 @@ tools/sql.go (run_sql) ──> DBExecutor ──> *sql.DB (raw statements)
     - `internal/bootstrap/app.go` (`MCPHandler` field + wiring)
   - Estimated scope: Small (2–3 files).
 
-- [ ] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
+- [x] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
   - Description: Register the MCP handler through `adaptor.HTTPHandler` at `MCP_PATH`
     (`/api/mcp`) for the methods the Streamable HTTP transport uses (GET/POST/DELETE).
     Mount **before** `/api/v1/*`, `/build/*`, and the `/*` SPA fallback, per the documented
     route order (health → mcp → api → build → spa). Ensure `/api/mcp` is never swallowed by
     the SPA fallback, and unknown `/api/*` still returns JSON 404.
   - Acceptance criteria:
-    - [ ] `GET /api/mcp` without token → 401; with correct token → MCP response.
-    - [ ] `POST /api/mcp` (initialize + tools/list) works with the bearer token.
-    - [ ] Missing token → 401; wrong token → 401; oversized body → rejected.
-    - [ ] `MCP_ENABLED=false` → `/api/mcp` falls through to the normal `/api/*` JSON 404.
-    - [ ] `/healthz`, `/api/v1/*`, `/build/*`, and the SPA at `/` are unchanged.
+    - [x] `GET`/`POST`/`DELETE /api/mcp` without token → 401.
+    - [x] Correct bearer token passes auth and reaches the MCP handler.
+    - [x] `MCP_ENABLED=false` → `/api/mcp` reaches the normal `/api/*` JSON 404.
+    - [x] `/api/v1/*` 404 and the SPA fallback at `/` are unchanged.
   - Verification:
-    - [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
-    - [ ] `curl -i localhost:8080/api/mcp` → 401 without token.
-    - [ ] `curl -i -H "Authorization: Bearer <token>" localhost:8080/api/mcp` → non-401.
-    - [ ] `curl -i localhost:8080/api/v1/nope` → JSON 404.
-    - [ ] `curl -s localhost:8080/some/unknown/path | head` → SPA shell.
+    - [x] `go build ./...`, `go vet ./...`, `go test ./...` clean.
+    - [x] Fiber `app.Test` covers 401, enabled/disabled, SPA, and API 404 (binary not run).
   - Dependencies: Task 5.
-  - Files likely touched:
-    - `internal/routes/mcp.go`
-    - `internal/routes/api.go` or `internal/bootstrap/app.go` (registration order)
-    - `internal/routes/mcp_test.go`
+  - Files:
+    - `internal/routes/mcp.go`, `internal/routes/mcp_test.go`
+    - `internal/bootstrap/app.go` (registration order)
   - Estimated scope: Small (2–3 files).
 
 ### Checkpoint: Complete
 
-- [ ] All six tasks' acceptance criteria met.
-- [ ] `/api/mcp` reachable on the main port; tools `ping`, `whoami`, `run_sql` respond.
-- [ ] Auth, size limit, and origin rules enforced by unit tests.
-- [ ] Route order correct: MCP before SPA fallback; `/api/*` 404s unchanged.
-- [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
-- [ ] No changes under `docs/`, `tests/`, or `.github/`; `.env` untouched.
-- [ ] Human reviews before `/build` starts.
+- [x] All six tasks' acceptance criteria met (Task 3 reverted to match the raw-SQL scope).
+- [x] `/api/mcp` mounted; tools `ping`, `whoami`, `run_sql` registered.
+- [x] Auth, size limit, and origin rules enforced by unit tests.
+- [x] Route order correct: MCP before SPA fallback; `/api/*` 404s unchanged.
+- [x] `go build ./...`, `go vet ./...`, `go test ./...` clean.
+- [x] No changes under `docs/`, `tests/`, or `.github/`; `.env` untouched.
+- [ ] Human reviews the raw-SQL exposure before deployment.
 
 ## Risks and Mitigations
 

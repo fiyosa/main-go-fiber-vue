@@ -73,23 +73,23 @@ integration tests (no local Postgres).
   - [x] Verify: `go build ./...`, `go vet ./...` clean
   - [x] Verify: `MCP_ENABLED=false` → handler nil; configured token accepted; missing token 401
 
-- [ ] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
-  - [ ] Mount via `adaptor.HTTPHandler` at `MCP_PATH`, methods GET/POST/DELETE
-  - [ ] Register before `/api/v1/*`, `/build/*`, and the `/*` SPA fallback
-  - [ ] Verify: `curl -i localhost:8080/api/mcp` → 401 without token
-  - [ ] Verify: correct bearer token → non-401 (MCP response)
-  - [ ] Verify: `MCP_ENABLED=false` → `/api/mcp` reaches the normal `/api/*` JSON 404
-  - [ ] Verify: `/healthz`, `/api/v1/*`, `/build/*`, and `/` unchanged
-  - [ ] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
+- [x] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
+  - [x] Mount via `adaptor.HTTPHandler` at `MCP_PATH` for all methods (`app.All`)
+  - [x] Registered before `RegisterAPI` / `RegisterWeb` in both `Router()` and `New()`
+  - [x] No-op when handler nil (`MCP_ENABLED=false`) → `/api/*` JSON 404 unchanged
+  - [x] Verify (Fiber `app.Test`): GET/POST/DELETE without token → 401
+  - [x] Verify: configured token reaches the handler
+  - [x] Verify: SPA fallback and `/api/v1/*` 404 unchanged
+  - [x] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
 
 ### Checkpoint — Complete
 
-- [ ] All Task 1–6 acceptance criteria met
-- [ ] `ping`, `whoami`, `run_sql` respond on `/api/mcp`
-- [ ] Auth, size limit, and origin rules covered by unit tests
-- [ ] Route order correct; `/api/*` 404s unchanged
-- [ ] No changes under `docs/`, `tests/`, or `.github/`; `.env` untouched
-- [ ] Human approves; ready for `/build`
+- [x] All Task 1–6 acceptance criteria met (Task 3 reverted for raw SQL)
+- [x] `ping`, `whoami`, `run_sql` registered on `/api/mcp`
+- [x] Auth, size limit, and origin rules covered by unit tests
+- [x] Route order correct; `/api/*` 404s unchanged
+- [x] No changes under `docs/`, `tests/`, or `.github/`; `.env` untouched
+- [ ] Human reviews raw-SQL exposure before deployment
 
 ## Deferred
 

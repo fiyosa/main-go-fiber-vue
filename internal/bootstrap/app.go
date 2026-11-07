@@ -44,6 +44,7 @@ func Router(cfg *config.Config) *fiber.App {
 	app.Use(recover.New())
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
+	routes.RegisterMCP(app, cfg.MCPPath, newMCPHandler(cfg, nil))
 	routes.RegisterAPI(app, deps)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
@@ -93,6 +94,7 @@ func New(cfg *config.Config) (*Application, error) {
 	app.Use(platformmiddleware.Locale(translator))
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
+	routes.RegisterMCP(app, cfg.MCPPath, mcpHandler)
 	routes.RegisterAPI(app, deps)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
