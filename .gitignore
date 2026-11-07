@@ -19,7 +19,7 @@ Thumbs.db
 .codegraph
 public/build
 tmp/
-# docs/
+docs/
 
 # Test files
 *_test.*
