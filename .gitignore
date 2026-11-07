@@ -20,3 +20,6 @@ Thumbs.db
 public/build
 tmp/
 docs/
+
+# Test files
+*_test.*
