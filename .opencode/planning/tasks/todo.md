@@ -41,15 +41,16 @@ integration tests (no local Postgres).
 
 ## Phase 2 — Domain Tools
 
-- [ ] Task 3: `mcp_audit_logs` migration + `UserRepository.SearchUsers`
-  - [ ] Add `000003_create_mcp_audit_logs.up.sql` / `.down.sql` following the existing pattern
-  - [ ] Columns: id, tool_name, parameters, result_summary, error_msg, ip_address,
-        user_agent, created_at
-  - [ ] Add `SearchUsers(ctx, email, page, pageSize)` to the user repository interface
-  - [ ] Implement it in the GORM repo: max 50 rows, nil-safe (empty slice, no panic)
-  - [ ] Wire the migration into `internal/app/infrastructure/commands/migrate.go` if needed
-  - [ ] Verify: `go build ./...`, `go vet ./...` clean
-  - [ ] Verify: unit test for the nil-DB path
+- [x] Task 3: `mcp_audit_logs` migration + `UserRepository.SearchUsers`
+  - [x] Add `000003_create_mcp_audit_logs.up.sql` / `.down.sql` following the existing pattern
+  - [x] Columns: id, tool_name, actor, parameters, result_summary, error, ip_address,
+        user_agent, duration_ms, created_at
+  - [x] Add `SearchUsers(ctx, email, page, pageSize)` to the user repository interface
+  - [x] Implement it in the GORM repo: max 50 rows, nil-safe (empty slice, no panic)
+  - [x] Migration auto-discovered from `migrations/`; no command wiring needed
+  - [x] Add `NewGORMAuditRecorder` so audit rows persist when a DB is present
+  - [x] Verify: `go build ./...`, `go vet ./...` clean
+  - [x] Verify: unit test for the nil-DB path
 
 - [ ] Task 4: `search_users` tool
   - [ ] `internal/mcp/tools/users.go` with `jsonschema`-tagged input/output structs

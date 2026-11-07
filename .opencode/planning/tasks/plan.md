@@ -140,7 +140,7 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 - [ ] Audit wrapper proven at unit level (including nil-DB no-op).
 ### Phase 2: Domain Tools — search_users + audit migration
 
-- [ ] Task 3: `mcp_audit_logs` migration + user repository `SearchUsers`
+- [x] Task 3: `mcp_audit_logs` migration + user repository `SearchUsers`
   - Description: Add `000003_create_mcp_audit_logs.up.sql` (id, tool_name, parameters,
     result_summary, error_msg, ip_address, user_agent, created_at; follow existing migration
     pattern from `000001`/`000002`). Also add `SearchUsers(ctx, email, page, pageSize)` to
@@ -148,12 +148,12 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
     rows, LIKE %email% query). The audit entity lives under
     `internal/app/domain/core/entity/mcp_audit_log.go`.
   - Acceptance criteria:
-    - [ ] Migration uses `BIGINT`/`TIMESTAMPTZ`/text per the schema; rolls back cleanly.
-    - [ ] `UserRepository.SearchUsers` returns at most 50 rows; nil DB → empty slice, no panic.
-    - [ ] `SearchUsers` interface added without breaking existing callers.
+    - [x] Migration uses `BIGINT`/`TIMESTAMPTZ`/text per the schema; rolls back cleanly.
+    - [x] `UserRepository.SearchUsers` returns at most 50 rows; nil DB → empty slice, no panic.
+    - [x] `SearchUsers` interface added without breaking existing callers.
   - Verification:
-    - [ ] `go build ./...`, `go vet ./...` clean.
-    - [ ] Unit test for nil-DB path in `SearchUsers`.
+    - [x] `go build ./...`, `go vet ./...` clean.
+    - [x] Unit test for nil-DB path in `SearchUsers`.
   - Dependencies: Task 2 (tools need the repo interface to exist).
   - Files likely touched:
     - `migrations/000003_create_mcp_audit_logs.up.sql`,
