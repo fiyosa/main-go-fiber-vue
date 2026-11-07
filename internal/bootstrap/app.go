@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -25,6 +26,7 @@ type Application struct {
 	DB         *gorm.DB
 	Tokens     *auth.Service
 	Translator *lang.Translator
+	MCPHandler http.Handler
 }
 
 // Router builds a Fiber app with every route registered but no runtime
@@ -80,6 +82,8 @@ func New(cfg *config.Config) (*Application, error) {
 
 	deps := wireAPI(db, sqlDB, tokens)
 
+	mcpHandler := newMCPHandler(cfg, sqlDB)
+
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
 		CaseSensitive: true,
@@ -97,6 +101,7 @@ func New(cfg *config.Config) (*Application, error) {
 		DB:         db,
 		Tokens:     tokens,
 		Translator: translator,
+		MCPHandler: mcpHandler,
 	}, nil
 }
 

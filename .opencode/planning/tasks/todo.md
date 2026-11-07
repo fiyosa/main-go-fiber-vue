@@ -65,12 +65,13 @@ integration tests (no local Postgres).
 
 ## Phase 3 — Integration
 
-- [ ] Task 5: `internal/bootstrap/mcp.go`
-  - [ ] Build the handler from `Dependencies` (config, `*sql.DB`, actor, version)
-  - [ ] No tool logic; no `internal/routes` import from bootstrap
-  - [ ] Return nil handler when `MCP_ENABLED=false`
-  - [ ] Verify: `go build ./...`, `go vet ./...` clean
-  - [ ] Verify: `MCP_ENABLED=false` registers no route
+- [x] Task 5: `internal/bootstrap/mcp.go`
+  - [x] `newMCPHandler(cfg, sqlDB)` returns nil when `MCP_ENABLED=false` or config nil
+  - [x] Builds `mcp.HandlerConfig` from config (auth, scopes, origins, limits, SQL settings)
+  - [x] `Application.MCPHandler` field wired in `New()`
+  - [x] No tool logic; no `internal/routes` import from bootstrap
+  - [x] Verify: `go build ./...`, `go vet ./...` clean
+  - [x] Verify: `MCP_ENABLED=false` → handler nil; configured token accepted; missing token 401
 
 - [ ] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
   - [ ] Mount via `adaptor.HTTPHandler` at `MCP_PATH`, methods GET/POST/DELETE

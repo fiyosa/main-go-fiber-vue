@@ -172,23 +172,23 @@ tools/sql.go (run_sql) ──> DBExecutor ──> *sql.DB (raw statements)
 
 ### Phase 3: Integration — bootstrap wiring + route registration
 
-- [ ] Task 5: `internal/bootstrap/mcp.go` (dependency wiring only)
-  - Description: Build the MCP handler from `Dependencies` — config, `*gorm.DB`,
-    user repository, actor, version. Returns an `http.Handler` (already wrapped with auth +
-    limits). Contains **no tool logic**. Called from `internal/bootstrap/app.go`
-    before the SPA fallback is registered.
+- [x] Task 5: `internal/bootstrap/mcp.go` (dependency wiring only)
+  - Description: Build the MCP handler from config and an optional `*sql.DB`. Returns an
+    `http.Handler` (already wrapped with auth + limits) or nil when disabled. Contains
+    **no tool logic**. The handler is stored on `Application` and mounted by Task 6.
   - Acceptance criteria:
-    - [ ] Returns `nil, nil` (or skips registration) when `MCP_ENABLED=false`.
-    - [ ] Startup errors when enabled and token empty (delegated to config).
-    - [ ] No import of `internal/routes` from bootstrap (dependency direction preserved).
+    - [x] Returns nil when `MCP_ENABLED=false` (and when config is nil).
+    - [x] Startup errors when enabled and token empty (delegated to config).
+    - [x] No import of `internal/routes` from bootstrap (dependency direction preserved).
+    - [x] `MCP_SCOPES` / `MCP_ALLOWED_ORIGINS` are split into trimmed lists.
   - Verification:
-    - [ ] `go build ./...`, `go vet ./...` clean.
-    - [ ] `MCP_ENABLED=false` → handler nil and no route registered.
+    - [x] `go build ./...`, `go vet ./...` clean.
+    - [x] `MCP_ENABLED=false` → handler nil.
   - Dependencies: Tasks 2, 4.
-  - Files likely touched:
-    - `internal/bootstrap/mcp.go`
-    - `internal/bootstrap/app.go`, `internal/bootstrap/wire_api.go`
-  - Estimated scope: Small (1–3 files).
+  - Files:
+    - `internal/bootstrap/mcp.go`, `internal/bootstrap/mcp_test.go`
+    - `internal/bootstrap/app.go` (`MCPHandler` field + wiring)
+  - Estimated scope: Small (2–3 files).
 
 - [ ] Task 6: `internal/routes/mcp.go` + mount `/api/mcp`
   - Description: Register the MCP handler through `adaptor.HTTPHandler` at `MCP_PATH`
