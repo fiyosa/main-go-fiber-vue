@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
@@ -16,7 +17,7 @@ export default defineConfig(({ mode }) => {
   const apiTarget = `http://localhost:${env.APP_PORT || '8080'}`
 
   return {
-    plugins: [vue()],
+    plugins: [vue(), tailwindcss()],
     envDir: repoRoot,
     publicDir,
     server: {
@@ -37,9 +38,7 @@ export default defineConfig(({ mode }) => {
           entryFileNames: 'index.js',
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
-            return assetInfo.name?.endsWith('.css')
-              ? 'index.css'
-              : 'assets/[name]-[hash][extname]'
+            return assetInfo.name?.endsWith('.css') ? 'index.css' : 'assets/[name]-[hash][extname]'
           },
         },
       },
