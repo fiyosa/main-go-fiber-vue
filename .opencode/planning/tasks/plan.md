@@ -1,18 +1,18 @@
-# Implementation Plan: MCP Server (Read-Only)
+# Implementation Plan: MCP Server (Database Access)
 
 ## Overview
 
-Add a **read-only MCP server** to the existing Go/Fiber app per `docs/19-mcp-server.md`. The
+Add an **MCP server for direct PostgreSQL access** to the existing Go/Fiber app. The
 server speaks the MCP **Streamable HTTP** transport on `/api/mcp` (same port as the HTTP API),
 authorizes every request with a static **bearer token** (`MCP_BEARER_TOKEN`) compared via
-SHA-256 `subtle.ConstantTimeCompare`, and exposes three tools: `ping`, `whoami`,
-`search_users`. Tool calls are not persisted; MCP writes nothing to the database.
+SHA-256 `subtle.ConstantTimeCompare`, and exposes `ping`, `whoami`, and `run_sql`. The
+`run_sql` tool executes raw SQL, including DDL and DML (user decision); nothing about tool
+calls is persisted.
 
 MCP is a delivery adapter like the HTTP routes: no separate process, port, or queue.
 
-Out of scope: mutating/write tools, OAuth, per-token rate limiting on PostgreSQL, SSE
-optimization, and testcontainers integration tests (no local Postgres). Write tools and rate
-limits are deferred until the read-only surface is stable and a DB is available.
+Out of scope: OAuth, per-token rate limiting on PostgreSQL, SSE optimization, and
+testcontainers integration tests (no local Postgres).
 
 ## Architecture Decisions
 
@@ -26,7 +26,7 @@ limits are deferred until the read-only surface is stable and a DB is available.
   `/build/*` → `/*` SPA fallback. MCP must mount before the fallback.
 - **Auth**: net/http-side wrapper `WithAuth` runs before the SDK handler. Bearer token →
   SHA-256 → `subtle.ConstantTimeCompare` against configured hash. Actor bound from
-  `MCP_ACTOR_USER_ID` into context; `whoami`/`search_users` fail when the actor is unset.
+  `MCP_ACTOR_USER_ID` into context; `whoami`/`run_sql` fail when the actor is unset.
   Never log the token.
 - **Stateless**: `MCP_STATELESS=true`, JSON response mode preferred; no server-side session
   state, no sticky-session dependency.
@@ -35,16 +35,15 @@ limits are deferred until the read-only surface is stable and a DB is available.
   `internal/routes/mcp.go` as documented.
 - **Config**: add `MCP_ENABLED`, `MCP_PATH`, `MCP_BEARER_TOKEN`, `MCP_ACTOR_USER_ID`,
   `MCP_SCOPES`, `MCP_MAX_BODY_BYTES`, `MCP_ALLOWED_ORIGINS`, `MCP_SESSION_TIMEOUT`,
-  `MCP_STATELESS` to the envconfig config struct; `MCP_BEARER_TOKEN` required when
-  `MCP_ENABLED=true` (startup fails if empty). Update `.env.example` only, never `.env`.
-- **No audit persistence** (user decision): tool calls are not stored in the database and no
-  `mcp_audit_logs` table or migration is created. The read-only tools only read the users
-  table. DB remains optional at runtime.
-- **`search_users`**: paginated user search by email, max page size 50 — added to the user
-  repository interface and implemented for GORM. Verified at code time; GORM user repo
-  nil-safe.
-- **Scope**: `mcp:read` granted by default via `MCP_SCOPES`; `mcp:write` reserved for future
-  mutating tools.
+  `MCP_STATELESS`, `MCP_SQL_MAX_ROWS`, `MCP_SQL_TIMEOUT` to the envconfig config struct;
+  `MCP_BEARER_TOKEN` required when `MCP_ENABLED=true` (startup fails if empty). Update
+  `.env.example` only, never `.env`.
+- **No audit persistence** (user decision): tool calls and query text are neither stored nor
+  logged. No `mcp_audit_logs` table or migration is created.
+- **`run_sql`**: raw SQL via `database/sql`, no allowlist. `RETURNING` statements are read as
+  queries; other statements report `rowsAffected`. Result rows are capped by
+  `MCP_SQL_MAX_ROWS` and each statement is bounded by `MCP_SQL_TIMEOUT`.
+- **Scope**: `mcp:read` granted by default via `MCP_SCOPES`.
 
 ## Dependency Graph
 
@@ -67,10 +66,8 @@ internal/routes/mcp.go  (adaptor.HTTPHandler → GET/POST /api/mcp)
         ▼
 internal/bootstrap/app.go  (RegisterMCP before RegisterWeb /**/ fallback)
         │
-        ▼tools/users.go (search_users) ──> user repository interface + GORM impl (nil-safe)
-                                       │
-                                       ▼
-                              wire_api.go / bootstrap DI (Dependencies)
+        ▼
+tools/sql.go (run_sql) ──> DBExecutor ──> *sql.DB (raw statements)
 ```
 
 ## Task List
@@ -128,53 +125,50 @@ internal/bootstrap/app.go  (RegisterMCP before RegisterWeb /**/ fallback)
 
 - [x] `go build ./...`, `go vet ./...`, `go test ./...` pass.
 - [x] Auth wrapper rejects missing/invalid tokens; system tools respond through the handler.
-### Phase 2: Domain Tools — search_users
+### Phase 2: Database Access — run_sql
 
-- [x] Task 3: user repository `SearchUsers` (no MCP table, no migration)
-  - Description: Add `SearchUsers(ctx, email, page, pageSize)` to the `UserRepository`
-    interface and implement it in the GORM user repository (nil-safe, max 50 rows,
-    ILIKE %email% query). No migration and no audit table: the user decided MCP must not
-    create database tables.
+- [x] Task 3: reverted — MCP uses raw SQL, so no user repository change
+  - Description: `search_users` was dropped in favor of the raw `run_sql` tool. The
+    `SearchUsers` addition and its migration/audit work were removed; the user repository
+    keeps only `FindByEmail`.
   - Acceptance criteria:
-    - [x] `UserRepository.SearchUsers` returns at most 50 rows; nil DB → empty slice, no panic.
-    - [x] `SearchUsers` interface added without breaking existing callers.
+    - [x] `UserRepository` unchanged apart from `FindByEmail`.
     - [x] No new migration and no `mcp_audit_logs` table.
   - Verification:
     - [x] `go build ./...`, `go vet ./...` clean.
-    - [x] Unit test for nil-DB path in `SearchUsers`.
-  - Dependencies: Task 2 (tools need the repo interface to exist).
-  - Files likely touched:
+    - [x] `go test ./...` passes.
+  - Files touched:
     - `internal/app/application/core/repository/user/repository.go`
     - `internal/app/application/core/repository/user/repository_test.go`
-  - Estimated scope: Small (2 files).
 
-- [ ] Task 4: `search_users` tool
-  - Description: Create `internal/mcp/tools/users.go`. Tool input: `{ email: string,
-    page: int }`; output: `{ users: [], total: int, page: int, pageSize: int }`. Calls
-    `UserRepository.SearchUsers`; enforces max page size 50 and max
-    90-day range (created_at filter). Actor must be set or the tool returns a safe error.
-    No database writes: MCP does not persist tool calls.
+- [x] Task 4: `run_sql` tool
+  - Description: Create `internal/mcp/tools/sql.go` and `internal/mcp/sql_executor.go`.
+    Input `{ sql: string }`; output `{ columns, rows, rowCount, rowsAffected, truncated,
+    durationMs }`. Any statement is allowed, including DDL and DML (user decision). The
+    executor uses `database/sql` directly, treats `RETURNING` statements as queries, caps
+    rows at `MCP_SQL_MAX_ROWS`, and enforces `MCP_SQL_TIMEOUT`. Actor must be set. No audit
+    or logging of query text.
   - Acceptance criteria:
-    - [ ] Tool registered in `server.go` with scope `mcp:read`.
-    - [ ] Returns paginated users matching email; empty list when no match.
-    - [ ] Page size capped at 50; actor missing → safe tool error.
-    - [ ] No raw SQL, table name, or file path accepted.
-    - [ ] No database write happens during a tool call.
+    - [x] Tool registered in `server.go`; visible as `run_sql`.
+    - [x] Row-returning and non-returning statements both return a structured result.
+    - [x] `Rows` capped at `MCP_SQL_MAX_ROWS`; `truncated` set when cut.
+    - [x] Missing actor, empty SQL, and nil database → safe tool errors.
+    - [x] No query text is persisted or logged.
   - Verification:
-    - [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
-    - [ ] Unit tests: normal call, missing actor, page-size cap.
-  - Dependencies: Task 3.
-  - Files likely touched:
-    - `internal/mcp/tools/users.go`
-    - `internal/mcp/server.go` (register the tool)
-  - Estimated scope: Small (2 files).
+    - [x] `go build ./...`, `go vet ./...`, `go test ./...` clean.
+    - [x] Unit tests: statement classification, value normalization, tool call via SDK.
+  - Dependencies: Task 2.
+  - Files:
+    - `internal/mcp/tools/sql.go`
+    - `internal/mcp/sql_executor.go`
+    - `internal/mcp/server.go`, `internal/mcp/handler.go`
+    - `internal/config/config.go`, `.env.example`
 
-### Checkpoint: Domain Tools
+### Checkpoint: Database Tools
 
-- [ ] `search_users` works through the handler; returns users as JSON.
-- [ ] No new database table or migration from MCP.
-- [ ] `go build ./...`, `go vet ./...`, `go test ./...` pass.
-- [ ] Human reviews before bootstrap/routing work.
+- [x] `run_sql` works through the handler with a fake executor.
+- [x] No new database table or migration from MCP.
+- [x] `go build ./...`, `go vet ./...`, `go test ./...` pass.
 
 ### Phase 3: Integration — bootstrap wiring + route registration
 
@@ -224,7 +218,7 @@ internal/bootstrap/app.go  (RegisterMCP before RegisterWeb /**/ fallback)
 ### Checkpoint: Complete
 
 - [ ] All six tasks' acceptance criteria met.
-- [ ] `/api/mcp` reachable on the main port; tools `ping`, `whoami`, `search_users` respond.
+- [ ] `/api/mcp` reachable on the main port; tools `ping`, `whoami`, `run_sql` respond.
 - [ ] Auth, size limit, and origin rules enforced by unit tests.
 - [ ] Route order correct: MCP before SPA fallback; `/api/*` 404s unchanged.
 - [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
@@ -238,18 +232,19 @@ internal/bootstrap/app.go  (RegisterMCP before RegisterWeb /**/ fallback)
 | MCP Go SDK API names drift (still evolving, per docs 19.2) | High | Pin a specific version; verify `mcp.NewServer`, `mcp.AddTool`, `mcp.NewStreamableHTTPHandler` signatures before coding |
 | Fiber `adaptor.HTTPHandler` rebuilds the request, so Fiber locals/token are unavailable | High | Do auth and actor injection on the `net/http` side in `WithAuth`, as docs 19.3 instructs |
 | `/api/mcp` swallowed by `/*` SPA fallback | High | Register MCP before `RegisterWeb`; add a route-order test |
-| No local Postgres → `search_users` untestable end to end | Medium | Nil-DB paths return safe defaults; unit tests cover the logic; real DB test deferred |
+| No local Postgres → `run_sql` untestable end to end | Medium | Executor is injected; unit tests use a fake executor and classify/normalize helpers; real DB test deferred |
 | SSE clients hit the global Fiber write timeout | Medium | Prefer stateless JSON response mode; document the SSE timeout exemption and proxy buffering setting |
 | Token accidentally logged or committed | High | Never log the token; only `.env.example` gets a placeholder; hash stored, raw token not kept |
-| `MCP_ACTOR_USER_ID` unset in production | Medium | `whoami`/`search_users` fail with a safe tool error; document the required variable |
+| `MCP_ACTOR_USER_ID` unset in production | Medium | `run_sql` fails with a safe tool error; document the required variable |
+| `run_sql` can drop or alter data because any statement is allowed | High | Accepted by user; DB_* user should be a dedicated role, backups required, token treated as full DB access |
 
 ## Open Questions
 
 1. **MCP file location**: docs 19.6 shows `internal/app/infrastructure/mcp/`, but this repo
    already has `internal/mcp/tools/`. Plan targets `internal/mcp/` to match existing code.
    Confirm this is acceptable (or move to the documented path).
-2. **v1 tools**: Should `search_users` filter by role/status too, or email only? (Plan assumes
-   email only, matching docs 19.5.)
+2. **v1 tools**: user chose raw SQL (`run_sql`) instead of `search_users`; confirm DDL stays
+   enabled in production.
 3. **Audit storage**: user decided MCP must not create tables or persist tool calls. No
    `mcp_audit_logs` table; confirm again if audit becomes required.
 4. **Actor identity**: `MCP_ACTOR_USER_ID` must point to an existing user in production.

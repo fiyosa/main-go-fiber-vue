@@ -6,6 +6,8 @@ import (
 	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"go-fiber-vue/internal/mcp/tools"
 )
 
 // HandlerConfig configures the net/http delivery layer. It is transport-level
@@ -19,6 +21,9 @@ type HandlerConfig struct {
 	AllowedOrigins []string
 	SessionTimeout time.Duration
 	Stateless      bool
+	SQLExecutor    tools.DBExecutor
+	SQLMaxRows     int
+	SQLTimeout     time.Duration
 	Logger         *slog.Logger
 }
 
@@ -33,6 +38,9 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		Version:     cfg.Version,
 		Scopes:      cfg.Scopes,
 		ActorUserID: cfg.ActorUserID,
+		SQLExecutor: cfg.SQLExecutor,
+		SQLMaxRows:  cfg.SQLMaxRows,
+		SQLTimeout:  cfg.SQLTimeout,
 		Logger:      cfg.Logger,
 	})
 

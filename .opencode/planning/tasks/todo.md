@@ -1,11 +1,12 @@
-# Todo: MCP Server (Read-Only)
+# Todo: MCP Server (Database Access)
 
-Scope: read-only MCP server on `/api/mcp` (Streamable HTTP) with bearer auth and tools
-`ping` / `whoami` / `search_users`. No database writes, no audit table.
+Scope: MCP server on `/api/mcp` (Streamable HTTP) with bearer auth and tools
+`ping` / `whoami` / `run_sql`. `run_sql` executes raw SQL including DDL/DML. No audit table,
+no query logging.
 
 Plan: `.opencode/planning/tasks/plan.md`
 
-Out of scope: write tools, OAuth, PostgreSQL rate limiting, SSE tuning, testcontainers
+Out of scope: OAuth, PostgreSQL rate limiting, SSE tuning, testcontainers
 integration tests (no local Postgres).
 
 ## Phase 1 — Foundations
@@ -27,7 +28,7 @@ integration tests (no local Postgres).
         origin allowlist + OPTIONS/CORS
   - [x] `internal/mcp/tools/system.go`: `ping` (version + time), `whoami` (actor, scopes)
   - [x] `whoami` without actor → safe tool error, no panic
-  - [x] No tool accepts raw SQL, table name, file path, shell command, or URL
+  - [x] No audit or database write code in the core package
   - [x] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
   - [x] Verify: unit tests for auth compare, origin check, body size, missing actor
 
@@ -36,36 +37,36 @@ integration tests (no local Postgres).
 - [x] Build/vet/test pass
 - [x] Auth rejects missing/invalid tokens; system tools respond via the handler
 - [x] No audit/DB code in the core package
-- [x] Human reviews before `search_users`
+- [x] Human reviews before the SQL tool
 
-## Phase 2 — Domain Tools
+## Phase 2 — Database Tools
 
-- [x] Task 3: `UserRepository.SearchUsers` only (no MCP table, no migration)
-  - [x] Add `SearchUsers(ctx, email, page, pageSize)` to the user repository interface
-  - [x] Implement it in the GORM repo: max 50 rows, nil-safe (empty slice, no panic)
+- [x] Task 3: reverted — no user repository change (raw SQL instead of `search_users`)
+  - [x] `UserRepository` keeps only `FindByEmail`
   - [x] No migration and no `mcp_audit_logs` table — MCP must not create tables
   - [x] Verify: `go build ./...`, `go vet ./...` clean
-  - [x] Verify: unit test for the nil-DB path
 
-- [ ] Task 4: `search_users` tool
-  - [ ] `internal/mcp/tools/users.go` with `jsonschema`-tagged input/output structs
-  - [ ] Register in `server.go` with scope `mcp:read`
-  - [ ] Paginated email search; page size capped at 50; 90-day range cap
-  - [ ] Missing actor → safe tool error
-  - [ ] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
-  - [ ] Verify: unit tests for normal call, missing actor, page-size cap
+- [x] Task 4: `run_sql` tool
+  - [x] `internal/mcp/tools/sql.go` with `jsonschema`-tagged input/output structs
+  - [x] `internal/mcp/sql_executor.go`: `*sql.DB` executor, no allowlist
+  - [x] Register in `server.go`; wire config `MCP_SQL_MAX_ROWS` / `MCP_SQL_TIMEOUT`
+  - [x] `RETURNING` statements read as queries; others report `rowsAffected`
+  - [x] Rows capped at `MCP_SQL_MAX_ROWS`; timeout per statement
+  - [x] Missing actor, empty SQL, nil DB → safe tool errors
+  - [x] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
+  - [x] Verify: unit tests for classification, normalization, tool call via SDK
 
-### Checkpoint — Domain Tools
+### Checkpoint — Database Tools
 
-- [ ] `search_users` returns users as JSON through the handler
-- [ ] No new database table or migration from MCP
-- [ ] Build/vet/test pass
+- [x] `run_sql` works through the handler with a fake executor
+- [x] No new database table or migration from MCP
+- [x] Build/vet/test pass
 - [ ] Human reviews before bootstrap/routing work
 
 ## Phase 3 — Integration
 
 - [ ] Task 5: `internal/bootstrap/mcp.go`
-  - [ ] Build the handler from `Dependencies` (config, DB, user repo, actor, version)
+  - [ ] Build the handler from `Dependencies` (config, `*sql.DB`, actor, version)
   - [ ] No tool logic; no `internal/routes` import from bootstrap
   - [ ] Return nil handler when `MCP_ENABLED=false`
   - [ ] Verify: `go build ./...`, `go vet ./...` clean
@@ -83,7 +84,7 @@ integration tests (no local Postgres).
 ### Checkpoint — Complete
 
 - [ ] All Task 1–6 acceptance criteria met
-- [ ] `ping`, `whoami`, `search_users` respond on `/api/mcp`
+- [ ] `ping`, `whoami`, `run_sql` respond on `/api/mcp`
 - [ ] Auth, size limit, and origin rules covered by unit tests
 - [ ] Route order correct; `/api/*` 404s unchanged
 - [ ] No changes under `docs/`, `tests/`, or `.github/`; `.env` untouched
@@ -91,7 +92,7 @@ integration tests (no local Postgres).
 
 ## Deferred
 
-- [ ] Write tools (`mcp:write`)
+- [ ] Write tools beyond raw SQL (`mcp:write`)
 - [ ] PostgreSQL `rate_limits` integration
 - [ ] SSE timeout/proxy-buffering tuning
 - [ ] Testcontainers integration + contract/golden tests
@@ -102,7 +103,7 @@ integration tests (no local Postgres).
 - Never log or commit `MCP_BEARER_TOKEN`; only `.env.example` gets a placeholder.
 - Keep auth on the `net/http` side; Fiber locals are unavailable after the adaptor.
 - Register `/api/mcp` before the SPA fallback.
-- Tools call the same use cases as HTTP handlers; no duplicated business rules.
-- MCP is read-only: no migration, no database writes, no audit table.
+- Tools call the same use cases as HTTP handlers when they exist; raw SQL is the exception.
+- MCP has no migration and no audit table; query text is never logged.
 - English comments; do not edit `docs/`; do not create `tests/` or `.github/`.
 - Verify with `go build ./...` / `go vet ./...` / `go test ./...`; do not run the binary.

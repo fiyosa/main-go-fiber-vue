@@ -10,7 +10,22 @@ import (
 	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"go-fiber-vue/internal/mcp/tools"
 )
+
+type fakeExecutor struct {
+	statement string
+	maxRows   int
+	result    tools.SQLResult
+	err       error
+}
+
+func (f *fakeExecutor) Execute(_ context.Context, statement string, maxRows int) (tools.SQLResult, error) {
+	f.statement = statement
+	f.maxRows = maxRows
+	return f.result, f.err
+}
 
 type bearerTransport struct {
 	token string
@@ -166,5 +181,113 @@ func TestHandlerRejectsOversizedBody(t *testing.T) {
 
 	if resp.StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestHandlerRunSQL(t *testing.T) {
+	exec := &fakeExecutor{result: tools.SQLResult{
+		Columns:  []string{"id", "email"},
+		Rows:     []map[string]any{{"id": int64(1), "email": "a@b.c"}},
+		RowCount: 1,
+	}}
+
+	cfg := testHandlerConfig()
+	cfg.SQLExecutor = exec
+	cfg.SQLMaxRows = 7
+
+	server := httptest.NewServer(NewHandler(cfg))
+	defer server.Close()
+
+	session := connectClient(t, server.URL, "s3cret")
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "run_sql",
+		Arguments: map[string]any{"sql": "SELECT id, email FROM users"},
+	})
+	if err != nil {
+		t.Fatalf("run_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("run_sql returned tool error: %v", result.Content)
+	}
+
+	if exec.statement != "SELECT id, email FROM users" {
+		t.Errorf("executed statement = %q", exec.statement)
+	}
+	if exec.maxRows != 7 {
+		t.Errorf("maxRows = %d, want 7", exec.maxRows)
+	}
+
+	out := decodeStructured[tools.SQLResult](t, result)
+	if out.RowCount != 1 || len(out.Rows) != 1 {
+		t.Fatalf("result = %+v, want one row", out)
+	}
+	if out.Rows[0]["email"] != "a@b.c" {
+		t.Errorf("row email = %v", out.Rows[0]["email"])
+	}
+}
+
+func TestHandlerRunSQLWithoutDatabase(t *testing.T) {
+	cfg := testHandlerConfig()
+	cfg.SQLExecutor = nil
+
+	server := httptest.NewServer(NewHandler(cfg))
+	defer server.Close()
+
+	session := connectClient(t, server.URL, "s3cret")
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "run_sql",
+		Arguments: map[string]any{"sql": "SELECT 1"},
+	})
+	if err != nil {
+		t.Fatalf("run_sql: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("run_sql without a database should be a tool error")
+	}
+}
+
+func TestHandlerRunSQLEmptyStatement(t *testing.T) {
+	exec := &fakeExecutor{}
+	cfg := testHandlerConfig()
+	cfg.SQLExecutor = exec
+
+	server := httptest.NewServer(NewHandler(cfg))
+	defer server.Close()
+
+	session := connectClient(t, server.URL, "s3cret")
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "run_sql",
+		Arguments: map[string]any{"sql": "   "},
+	})
+	if err != nil {
+		t.Fatalf("run_sql: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("empty sql should be a tool error")
+	}
+	if exec.statement != "" {
+		t.Errorf("executor was called with %q; want no call", exec.statement)
+	}
+}
+
+func TestHandlerRunSQLWithoutActor(t *testing.T) {
+	exec := &fakeExecutor{}
+	cfg := testHandlerConfig()
+	cfg.ActorUserID = ""
+	cfg.SQLExecutor = exec
+
+	server := httptest.NewServer(NewHandler(cfg))
+	defer server.Close()
+
+	session := connectClient(t, server.URL, "s3cret")
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "run_sql",
+		Arguments: map[string]any{"sql": "SELECT 1"},
+	})
+	if err != nil {
+		t.Fatalf("run_sql: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("run_sql without an actor should be a tool error")
 	}
 }

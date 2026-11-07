@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"log/slog"
+	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -20,10 +21,13 @@ type ServerConfig struct {
 	Version     string
 	Scopes      []string
 	ActorUserID string
+	SQLExecutor tools.DBExecutor
+	SQLMaxRows  int
+	SQLTimeout  time.Duration
 	Logger      *slog.Logger
 }
 
-// NewMCPServer builds a server with the read-only system tools registered.
+// NewMCPServer builds a server with the system and SQL tools registered.
 func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 	version := cfg.Version
 	if version == "" {
@@ -35,7 +39,7 @@ func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 		Title:   "Application MCP",
 		Version: version,
 	}, &sdkmcp.ServerOptions{
-		Instructions: "Read-only tools for querying the application API.",
+		Instructions: "Tools for inspecting and modifying the application database over MCP.",
 		Logger:       cfg.Logger,
 	})
 
@@ -43,6 +47,13 @@ func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 		Version:     version,
 		Scopes:      cfg.Scopes,
 		ActorUserID: cfg.ActorUserID,
+	})
+
+	tools.RegisterSQL(server, tools.SQLConfig{
+		Executor:    cfg.SQLExecutor,
+		ActorUserID: cfg.ActorUserID,
+		MaxRows:     cfg.SQLMaxRows,
+		Timeout:     cfg.SQLTimeout,
 	})
 
 	return server

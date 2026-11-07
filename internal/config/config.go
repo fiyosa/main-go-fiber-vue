@@ -36,8 +36,8 @@ type Config struct {
 	JWTAccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"3h"`
 	JWTRefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
 
-	// MCP exposes a read-only Model Context Protocol server on MCPPath. It is
-	// disabled per environment when MCP_ENABLED=false.
+	// MCP exposes a Model Context Protocol server on MCPPath. It is disabled per
+	// environment when MCP_ENABLED=false.
 	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"true"`
 	MCPPath           string        `envconfig:"MCP_PATH" default:"/api/mcp"`
 	MCPBearerToken    string        `envconfig:"MCP_BEARER_TOKEN"`
@@ -47,6 +47,10 @@ type Config struct {
 	MCPAllowedOrigins string        `envconfig:"MCP_ALLOWED_ORIGINS"`
 	MCPSessionTimeout time.Duration `envconfig:"MCP_SESSION_TIMEOUT" default:"60s"`
 	MCPStateless      bool          `envconfig:"MCP_STATELESS" default:"true"`
+	// MCPSQLMaxRows caps how many rows run_sql returns per call.
+	MCPSQLMaxRows int `envconfig:"MCP_SQL_MAX_ROWS" default:"1000"`
+	// MCPSQLTimeout bounds how long one run_sql statement may run.
+	MCPSQLTimeout time.Duration `envconfig:"MCP_SQL_TIMEOUT" default:"30s"`
 }
 
 func Load() (*Config, error) {
