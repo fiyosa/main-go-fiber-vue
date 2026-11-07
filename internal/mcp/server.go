@@ -20,7 +20,6 @@ const (
 type ServerConfig struct {
 	Version     string
 	Scopes      []string
-	ActorUserID string
 	SQLExecutor tools.DBExecutor
 	SQLMaxRows  int
 	SQLTimeout  time.Duration
@@ -44,16 +43,14 @@ func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 	})
 
 	tools.RegisterSystem(server, tools.SystemConfig{
-		Version:     version,
-		Scopes:      cfg.Scopes,
-		ActorUserID: cfg.ActorUserID,
+		Version: version,
+		Scopes:  cfg.Scopes,
 	})
 
 	tools.RegisterSQL(server, tools.SQLConfig{
-		Executor:    cfg.SQLExecutor,
-		ActorUserID: cfg.ActorUserID,
-		MaxRows:     cfg.SQLMaxRows,
-		Timeout:     cfg.SQLTimeout,
+		Executor: cfg.SQLExecutor,
+		MaxRows:  cfg.SQLMaxRows,
+		Timeout:  cfg.SQLTimeout,
 	})
 
 	return server

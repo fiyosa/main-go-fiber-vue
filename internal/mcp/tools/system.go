@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -10,9 +9,8 @@ import (
 
 // SystemConfig configures the built-in read-only system tools.
 type SystemConfig struct {
-	Version     string
-	Scopes      []string
-	ActorUserID string
+	Version string
+	Scopes  []string
 	// Now is injectable so tests can pin the clock. Defaults to time.Now.
 	Now func() time.Time
 }
@@ -23,7 +21,6 @@ type pingOutput struct {
 }
 
 type whoamiOutput struct {
-	Actor   string   `json:"actor" jsonschema:"configured actor user ID"`
 	Scopes  []string `json:"scopes" jsonschema:"granted scopes"`
 	Version string   `json:"version" jsonschema:"server version"`
 }
@@ -47,13 +44,9 @@ func RegisterSystem(server *sdkmcp.Server, cfg SystemConfig) {
 
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:        "whoami",
-		Description: "Returns the actor, scopes, and server version bound to this token.",
+		Description: "Returns the scopes and server version bound to this token.",
 	}, func(context.Context, *sdkmcp.CallToolRequest, struct{}) (*sdkmcp.CallToolResult, whoamiOutput, error) {
-		if cfg.ActorUserID == "" {
-			return nil, whoamiOutput{}, fmt.Errorf("no actor configured: set MCP_ACTOR_USER_ID")
-		}
 		return nil, whoamiOutput{
-			Actor:   cfg.ActorUserID,
 			Scopes:  cfg.Scopes,
 			Version: cfg.Version,
 		}, nil

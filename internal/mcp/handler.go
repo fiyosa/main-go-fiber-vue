@@ -14,7 +14,6 @@ import (
 // only: tool behavior lives in the tools package.
 type HandlerConfig struct {
 	TokenHash      [32]byte
-	ActorUserID    string
 	Scopes         []string
 	Version        string
 	MaxBodyBytes   int64
@@ -37,7 +36,6 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	server := NewMCPServer(ServerConfig{
 		Version:     cfg.Version,
 		Scopes:      cfg.Scopes,
-		ActorUserID: cfg.ActorUserID,
 		SQLExecutor: cfg.SQLExecutor,
 		SQLMaxRows:  cfg.SQLMaxRows,
 		SQLTimeout:  cfg.SQLTimeout,
@@ -56,7 +54,7 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 	)
 
 	var handler http.Handler = streamable
-	handler = RequireBearer(handler, cfg.TokenHash, cfg.ActorUserID)
+	handler = RequireBearer(handler, cfg.TokenHash)
 	handler = RequireOrigin(handler, cfg.AllowedOrigins)
 	return handler
 }

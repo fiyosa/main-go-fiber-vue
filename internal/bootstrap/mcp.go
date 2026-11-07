@@ -20,7 +20,6 @@ func newMCPHandler(cfg *config.Config, sqlDB *sql.DB) http.Handler {
 
 	return mcpserver.NewHandler(mcpserver.HandlerConfig{
 		TokenHash:      cfg.MCPTokenHash(),
-		ActorUserID:    cfg.MCPActorUserID,
 		Scopes:         splitCSV(cfg.MCPScopes),
 		Version:        mcpserver.DefaultVersion,
 		MaxBodyBytes:   cfg.MCPMaxBodyBytes,

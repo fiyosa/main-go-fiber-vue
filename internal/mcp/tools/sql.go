@@ -34,10 +34,9 @@ type DBExecutor interface {
 
 // SQLConfig configures the run_sql tool.
 type SQLConfig struct {
-	Executor    DBExecutor
-	ActorUserID string
-	MaxRows     int
-	Timeout     time.Duration
+	Executor DBExecutor
+	MaxRows  int
+	Timeout  time.Duration
 }
 
 type sqlInput struct {
@@ -46,7 +45,7 @@ type sqlInput struct {
 
 // RegisterSQL registers the run_sql tool. The tool is intentionally unrestricted
 // at the SQL level: the bearer token owner can run DDL and DML. It only enforces
-// an actor, a non-empty statement, an execution timeout, and a row cap.
+// a non-empty statement, an execution timeout, and a row cap.
 func RegisterSQL(server *sdkmcp.Server, cfg SQLConfig) {
 	maxRows := cfg.MaxRows
 	if maxRows <= 0 {
@@ -61,9 +60,6 @@ func RegisterSQL(server *sdkmcp.Server, cfg SQLConfig) {
 		Name:        "run_sql",
 		Description: "Executes a raw SQL statement against the application PostgreSQL database and returns rows or affected-row counts.",
 	}, func(ctx context.Context, _ *sdkmcp.CallToolRequest, in sqlInput) (*sdkmcp.CallToolResult, SQLResult, error) {
-		if cfg.ActorUserID == "" {
-			return nil, SQLResult{}, fmt.Errorf("no actor configured: set MCP_ACTOR_USER_ID")
-		}
 		statement := strings.TrimSpace(in.SQL)
 		if statement == "" {
 			return nil, SQLResult{}, fmt.Errorf("sql is required")

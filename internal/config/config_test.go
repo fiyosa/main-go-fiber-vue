@@ -16,8 +16,7 @@ func clearMCPEnv(t *testing.T) {
 	for _, key := range []string{
 		"MCP_ENABLED",
 		"MCP_PATH",
-		"MCP_BEARER_TOKEN",
-		"MCP_ACTOR_USER_ID",
+		"MCP_TOKEN",
 		"MCP_SCOPES",
 		"MCP_MAX_BODY_BYTES",
 		"MCP_ALLOWED_ORIGINS",
@@ -50,11 +49,8 @@ func TestMCPDefaults(t *testing.T) {
 	if cfg.MCPPath != "/api/mcp" {
 		t.Errorf("MCPPath = %q, want %q", cfg.MCPPath, "/api/mcp")
 	}
-	if cfg.MCPBearerToken != "" {
-		t.Errorf("MCPBearerToken = %q, want empty", cfg.MCPBearerToken)
-	}
-	if cfg.MCPActorUserID != "" {
-		t.Errorf("MCPActorUserID = %q, want empty", cfg.MCPActorUserID)
+	if cfg.MCPToken != "" {
+		t.Errorf("MCPToken = %q, want empty", cfg.MCPToken)
 	}
 	if cfg.MCPScopes != "mcp:read" {
 		t.Errorf("MCPScopes = %q, want %q", cfg.MCPScopes, "mcp:read")
@@ -89,14 +85,14 @@ func TestMCPValidate(t *testing.T) {
 	})
 
 	t.Run("enabled with blank token fails", func(t *testing.T) {
-		cfg := Config{MCPEnabled: true, MCPBearerToken: "   "}
+		cfg := Config{MCPEnabled: true, MCPToken: "   "}
 		if err := cfg.validateMCP(); err == nil {
 			t.Fatal("validateMCP() = nil, want error")
 		}
 	})
 
 	t.Run("enabled with token passes", func(t *testing.T) {
-		cfg := Config{MCPEnabled: true, MCPBearerToken: "s3cret"}
+		cfg := Config{MCPEnabled: true, MCPToken: "s3cret"}
 		if err := cfg.validateMCP(); err != nil {
 			t.Fatalf("validateMCP() = %v, want nil", err)
 		}
@@ -104,7 +100,7 @@ func TestMCPValidate(t *testing.T) {
 }
 
 func TestMCPTokenHash(t *testing.T) {
-	cfg := Config{MCPBearerToken: "s3cret"}
+	cfg := Config{MCPToken: "s3cret"}
 	want := sha256.Sum256([]byte("s3cret"))
 
 	if got := cfg.MCPTokenHash(); got != want {

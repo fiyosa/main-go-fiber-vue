@@ -1,29 +1,11 @@
 package mcp
 
 import (
-	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"net/http"
 	"strings"
 )
-
-type actorContextKey struct{}
-
-// WithActor stores the bound actor in ctx so tool handlers can resolve the
-// identity behind a request.
-func WithActor(ctx context.Context, actor string) context.Context {
-	if actor == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, actorContextKey{}, actor)
-}
-
-// ActorFromContext returns the actor bound by RequireBearer, if any.
-func ActorFromContext(ctx context.Context) (string, bool) {
-	actor, ok := ctx.Value(actorContextKey{}).(string)
-	return actor, ok && actor != ""
-}
 
 // bearerToken extracts the token from an Authorization header.
 func bearerToken(header string) (string, bool) {
@@ -40,9 +22,8 @@ func bearerToken(header string) (string, bool) {
 
 // RequireBearer wraps next with static bearer token verification. The presented
 // token is hashed with SHA-256 and compared in constant time, so timing never
-// reveals how much of a token matched. The configured actor is injected into the
-// request context for downstream tool calls.
-func RequireBearer(next http.Handler, expectedHash [32]byte, actor string) http.Handler {
+// reveals how much of a token matched.
+func RequireBearer(next http.Handler, expectedHash [32]byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, ok := bearerToken(r.Header.Get("Authorization"))
 		if !ok {
@@ -54,7 +35,7 @@ func RequireBearer(next http.Handler, expectedHash [32]byte, actor string) http.
 			http.Error(w, "invalid bearer token", http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(WithActor(r.Context(), actor)))
+		next.ServeHTTP(w, r)
 	})
 }
 

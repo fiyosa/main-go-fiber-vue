@@ -41,7 +41,6 @@ func (t bearerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 func testHandlerConfig() HandlerConfig {
 	return HandlerConfig{
 		TokenHash:      hashToken("s3cret"),
-		ActorUserID:    "user-1",
 		Scopes:         []string{"mcp:read"},
 		Version:        "test-1",
 		MaxBodyBytes:   1 << 20,
@@ -113,32 +112,11 @@ func TestHandlerSystemTools(t *testing.T) {
 		t.Fatalf("whoami returned tool error: %v", whoamiResult.Content)
 	}
 	whoami := decodeStructured[struct {
-		Actor   string   `json:"actor"`
 		Scopes  []string `json:"scopes"`
 		Version string   `json:"version"`
 	}](t, whoamiResult)
-	if whoami.Actor != "user-1" {
-		t.Errorf("whoami actor = %q, want %q", whoami.Actor, "user-1")
-	}
 	if len(whoami.Scopes) != 1 || whoami.Scopes[0] != "mcp:read" {
 		t.Errorf("whoami scopes = %v, want [mcp:read]", whoami.Scopes)
-	}
-}
-
-func TestWhoamiWithoutActorReturnsToolError(t *testing.T) {
-	cfg := testHandlerConfig()
-	cfg.ActorUserID = ""
-
-	server := httptest.NewServer(NewHandler(cfg))
-	defer server.Close()
-
-	session := connectClient(t, server.URL, "s3cret")
-	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "whoami"})
-	if err != nil {
-		t.Fatalf("whoami: %v", err)
-	}
-	if !result.IsError {
-		t.Fatal("whoami without an actor should be a tool error")
 	}
 }
 
@@ -267,27 +245,5 @@ func TestHandlerRunSQLEmptyStatement(t *testing.T) {
 	}
 	if exec.statement != "" {
 		t.Errorf("executor was called with %q; want no call", exec.statement)
-	}
-}
-
-func TestHandlerRunSQLWithoutActor(t *testing.T) {
-	exec := &fakeExecutor{}
-	cfg := testHandlerConfig()
-	cfg.ActorUserID = ""
-	cfg.SQLExecutor = exec
-
-	server := httptest.NewServer(NewHandler(cfg))
-	defer server.Close()
-
-	session := connectClient(t, server.URL, "s3cret")
-	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
-		Name:      "run_sql",
-		Arguments: map[string]any{"sql": "SELECT 1"},
-	})
-	if err != nil {
-		t.Fatalf("run_sql: %v", err)
-	}
-	if !result.IsError {
-		t.Fatal("run_sql without an actor should be a tool error")
 	}
 }

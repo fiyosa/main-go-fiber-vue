@@ -40,8 +40,7 @@ type Config struct {
 	// environment when MCP_ENABLED=false.
 	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"true"`
 	MCPPath           string        `envconfig:"MCP_PATH" default:"/api/mcp"`
-	MCPBearerToken    string        `envconfig:"MCP_BEARER_TOKEN"`
-	MCPActorUserID    string        `envconfig:"MCP_ACTOR_USER_ID"`
+	MCPToken          string        `envconfig:"MCP_TOKEN"`
 	MCPScopes         string        `envconfig:"MCP_SCOPES" default:"mcp:read"`
 	MCPMaxBodyBytes   int64         `envconfig:"MCP_MAX_BODY_BYTES" default:"1048576"`
 	MCPAllowedOrigins string        `envconfig:"MCP_ALLOWED_ORIGINS"`
@@ -91,8 +90,8 @@ func (c *Config) validateMCP() error {
 	if !c.MCPEnabled {
 		return nil
 	}
-	if strings.TrimSpace(c.MCPBearerToken) == "" {
-		return errors.New("MCP_BEARER_TOKEN is required when MCP_ENABLED=true")
+	if strings.TrimSpace(c.MCPToken) == "" {
+		return errors.New("MCP_TOKEN is required when MCP_ENABLED=true")
 	}
 	return nil
 }
@@ -101,7 +100,7 @@ func (c *Config) validateMCP() error {
 // compare this against the hash of a presented token; the raw token is never
 // stored or logged.
 func (c *Config) MCPTokenHash() [32]byte {
-	return sha256.Sum256([]byte(c.MCPBearerToken))
+	return sha256.Sum256([]byte(c.MCPToken))
 }
 
 func (c *Config) IsDevelopment() bool {

@@ -13,8 +13,7 @@ func mcpConfig() *config.Config {
 	return &config.Config{
 		MCPEnabled:        true,
 		MCPPath:           "/api/mcp",
-		MCPBearerToken:    "s3cret",
-		MCPActorUserID:    "user-1",
+		MCPToken:          "s3cret",
 		MCPScopes:         "mcp:read, mcp:write",
 		MCPMaxBodyBytes:   1 << 20,
 		MCPSessionTimeout: 0,

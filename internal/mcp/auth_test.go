@@ -27,7 +27,7 @@ func TestRequireBearer(t *testing.T) {
 			next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
-			handler := RequireBearer(next, hashToken("s3cret"), "user-1")
+			handler := RequireBearer(next, hashToken("s3cret"))
 
 			req := httptest.NewRequest(http.MethodPost, "/api/mcp", nil)
 			if tc.header != "" {
@@ -40,26 +40,6 @@ func TestRequireBearer(t *testing.T) {
 				t.Fatalf("status = %d, want %d (body %q)", rec.Code, tc.want, rec.Body.String())
 			}
 		})
-	}
-}
-
-func TestRequireBearerInjectsActor(t *testing.T) {
-	var got string
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		actor, ok := ActorFromContext(r.Context())
-		if !ok {
-			t.Error("actor missing from context")
-		}
-		got = actor
-		w.WriteHeader(http.StatusOK)
-	})
-
-	req := httptest.NewRequest(http.MethodPost, "/api/mcp", nil)
-	req.Header.Set("Authorization", "Bearer s3cret")
-	RequireBearer(next, hashToken("s3cret"), "user-1").ServeHTTP(httptest.NewRecorder(), req)
-
-	if got != "user-1" {
-		t.Fatalf("actor = %q, want %q", got, "user-1")
 	}
 }
 

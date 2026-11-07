@@ -32,7 +32,6 @@ func newMCPTestApp(t *testing.T, handler http.Handler) *fiber.App {
 func mcpHandlerForTest() http.Handler {
 	return mcpserver.NewHandler(mcpserver.HandlerConfig{
 		TokenHash:      sha256.Sum256([]byte("s3cret")),
-		ActorUserID:    "user-1",
 		Scopes:         []string{"mcp:read"},
 		Version:        "test-1",
 		MaxBodyBytes:   1 << 20,
