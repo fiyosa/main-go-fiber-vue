@@ -20,13 +20,10 @@ type ServerConfig struct {
 	Version     string
 	Scopes      []string
 	ActorUserID string
-	Audit       AuditRecorder
 	Logger      *slog.Logger
 }
 
-// NewMCPServer builds a server with the read-only system tools registered. The
-// audit middleware is attached here so every tool call is recorded, never from
-// inside a tool body.
+// NewMCPServer builds a server with the read-only system tools registered.
 func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 	version := cfg.Version
 	if version == "" {
@@ -41,7 +38,6 @@ func NewMCPServer(cfg ServerConfig) *sdkmcp.Server {
 		Instructions: "Read-only tools for querying the application API.",
 		Logger:       cfg.Logger,
 	})
-	server.AddReceivingMiddleware(AuditMiddleware(cfg.Audit))
 
 	tools.RegisterSystem(server, tools.SystemConfig{
 		Version:     version,

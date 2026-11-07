@@ -19,7 +19,6 @@ type HandlerConfig struct {
 	AllowedOrigins []string
 	SessionTimeout time.Duration
 	Stateless      bool
-	Audit          AuditRecorder
 	Logger         *slog.Logger
 }
 
@@ -34,7 +33,6 @@ func NewHandler(cfg HandlerConfig) http.Handler {
 		Version:     cfg.Version,
 		Scopes:      cfg.Scopes,
 		ActorUserID: cfg.ActorUserID,
-		Audit:       cfg.Audit,
 		Logger:      cfg.Logger,
 	})
 

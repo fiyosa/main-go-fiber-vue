@@ -6,30 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
-
-type fakeAudit struct {
-	mu      sync.Mutex
-	entries []AuditEntry
-}
-
-func (f *fakeAudit) RecordToolCall(_ context.Context, entry AuditEntry) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.entries = append(f.entries, entry)
-	return nil
-}
-
-func (f *fakeAudit) recorded() []AuditEntry {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return append([]AuditEntry(nil), f.entries...)
-}
 
 type bearerTransport struct {
 	token string
@@ -42,7 +23,7 @@ func (t bearerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return t.base.RoundTrip(clone)
 }
 
-func testHandlerConfig(audit AuditRecorder) HandlerConfig {
+func testHandlerConfig() HandlerConfig {
 	return HandlerConfig{
 		TokenHash:      hashToken("s3cret"),
 		ActorUserID:    "user-1",
@@ -50,7 +31,6 @@ func testHandlerConfig(audit AuditRecorder) HandlerConfig {
 		Version:        "test-1",
 		MaxBodyBytes:   1 << 20,
 		Stateless:      true,
-		Audit:          audit,
 		SessionTimeout: time.Minute,
 	}
 }
@@ -86,7 +66,7 @@ func decodeStructured[T any](t *testing.T, result *sdkmcp.CallToolResult) T {
 }
 
 func TestHandlerSystemTools(t *testing.T) {
-	server := httptest.NewServer(NewHandler(testHandlerConfig(&fakeAudit{})))
+	server := httptest.NewServer(NewHandler(testHandlerConfig()))
 	defer server.Close()
 
 	session := connectClient(t, server.URL, "s3cret")
@@ -131,7 +111,7 @@ func TestHandlerSystemTools(t *testing.T) {
 }
 
 func TestWhoamiWithoutActorReturnsToolError(t *testing.T) {
-	cfg := testHandlerConfig(&fakeAudit{})
+	cfg := testHandlerConfig()
 	cfg.ActorUserID = ""
 
 	server := httptest.NewServer(NewHandler(cfg))
@@ -148,7 +128,7 @@ func TestWhoamiWithoutActorReturnsToolError(t *testing.T) {
 }
 
 func TestHandlerRequiresBearerToken(t *testing.T) {
-	server := httptest.NewServer(NewHandler(testHandlerConfig(&fakeAudit{})))
+	server := httptest.NewServer(NewHandler(testHandlerConfig()))
 	defer server.Close()
 
 	resp, err := http.Post(server.URL, "application/json", strings.NewReader("{}"))
@@ -163,7 +143,7 @@ func TestHandlerRequiresBearerToken(t *testing.T) {
 }
 
 func TestHandlerRejectsOversizedBody(t *testing.T) {
-	cfg := testHandlerConfig(&fakeAudit{})
+	cfg := testHandlerConfig()
 	cfg.MaxBodyBytes = 32
 
 	server := httptest.NewServer(NewHandler(cfg))
@@ -186,30 +166,5 @@ func TestHandlerRejectsOversizedBody(t *testing.T) {
 
 	if resp.StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusRequestEntityTooLarge)
-	}
-}
-
-func TestAuditMiddlewareRecordsToolCalls(t *testing.T) {
-	audit := &fakeAudit{}
-	server := httptest.NewServer(NewHandler(testHandlerConfig(audit)))
-	defer server.Close()
-
-	session := connectClient(t, server.URL, "s3cret")
-	if _, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "ping"}); err != nil {
-		t.Fatalf("ping: %v", err)
-	}
-
-	entries := audit.recorded()
-	if len(entries) != 1 {
-		t.Fatalf("audit entries = %d, want 1", len(entries))
-	}
-	if entries[0].Tool != "ping" {
-		t.Errorf("audited tool = %q, want %q", entries[0].Tool, "ping")
-	}
-	if !entries[0].Success {
-		t.Errorf("audited call marked failed: %q", entries[0].Error)
-	}
-	if entries[0].OccurredAt.IsZero() {
-		t.Error("audit entry has zero timestamp")
 	}
 }

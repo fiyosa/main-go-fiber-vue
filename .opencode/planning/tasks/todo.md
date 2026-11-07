@@ -1,7 +1,7 @@
 # Todo: MCP Server (Read-Only)
 
-Scope: read-only MCP server on `/api/mcp` (Streamable HTTP) with bearer auth, tools
-`ping` / `whoami` / `search_users`, and one audit row per tool call.
+Scope: read-only MCP server on `/api/mcp` (Streamable HTTP) with bearer auth and tools
+`ping` / `whoami` / `search_users`. No database writes, no audit table.
 
 Plan: `.opencode/planning/tasks/plan.md`
 
@@ -20,12 +20,11 @@ integration tests (no local Postgres).
   - [x] Verify: `go build ./...`, `go vet ./...` clean
   - [x] Verify: unit test for defaults + empty-token failure
 
-- [x] Task 2: Core files — auth, server, handler, audit + system tools
+- [x] Task 2: Core files — auth, server, handler + system tools
   - [x] `internal/mcp/auth.go`: bearer token parse + `subtle.ConstantTimeCompare`
   - [x] `internal/mcp/server.go`: `mcp.NewServer`, register `ping` + `whoami` via `mcp.AddTool`
   - [x] `internal/mcp/handler.go`: `WithAuth` → Streamable HTTP handler; body-size limit;
         origin allowlist + OPTIONS/CORS
-  - [x] `internal/mcp/audit.go`: one `mcp_audit_logs` row per tool call (nil-DB no-op)
   - [x] `internal/mcp/tools/system.go`: `ping` (version + time), `whoami` (actor, scopes)
   - [x] `whoami` without actor → safe tool error, no panic
   - [x] No tool accepts raw SQL, table name, file path, shell command, or URL
@@ -34,21 +33,17 @@ integration tests (no local Postgres).
 
 ### Checkpoint — Foundations
 
-- [ ] Build/vet/test pass
-- [ ] Auth rejects missing/invalid tokens; system tools respond via the handler
-- [ ] Audit wrapper proven incl. nil-DB no-op
-- [ ] Human reviews before `search_users` + audit migration
+- [x] Build/vet/test pass
+- [x] Auth rejects missing/invalid tokens; system tools respond via the handler
+- [x] No audit/DB code in the core package
+- [x] Human reviews before `search_users`
 
 ## Phase 2 — Domain Tools
 
-- [x] Task 3: `mcp_audit_logs` migration + `UserRepository.SearchUsers`
-  - [x] Add `000003_create_mcp_audit_logs.up.sql` / `.down.sql` following the existing pattern
-  - [x] Columns: id, tool_name, actor, parameters, result_summary, error, ip_address,
-        user_agent, duration_ms, created_at
+- [x] Task 3: `UserRepository.SearchUsers` only (no MCP table, no migration)
   - [x] Add `SearchUsers(ctx, email, page, pageSize)` to the user repository interface
   - [x] Implement it in the GORM repo: max 50 rows, nil-safe (empty slice, no panic)
-  - [x] Migration auto-discovered from `migrations/`; no command wiring needed
-  - [x] Add `NewGORMAuditRecorder` so audit rows persist when a DB is present
+  - [x] No migration and no `mcp_audit_logs` table — MCP must not create tables
   - [x] Verify: `go build ./...`, `go vet ./...` clean
   - [x] Verify: unit test for the nil-DB path
 
@@ -63,7 +58,7 @@ integration tests (no local Postgres).
 ### Checkpoint — Domain Tools
 
 - [ ] `search_users` returns users as JSON through the handler
-- [ ] Migration follows the existing pattern
+- [ ] No new database table or migration from MCP
 - [ ] Build/vet/test pass
 - [ ] Human reviews before bootstrap/routing work
 
@@ -108,6 +103,6 @@ integration tests (no local Postgres).
 - Keep auth on the `net/http` side; Fiber locals are unavailable after the adaptor.
 - Register `/api/mcp` before the SPA fallback.
 - Tools call the same use cases as HTTP handlers; no duplicated business rules.
-- Audit is written by the shared wrapper, never inside a tool body.
+- MCP is read-only: no migration, no database writes, no audit table.
 - English comments; do not edit `docs/`; do not create `tests/` or `.github/`.
 - Verify with `go build ./...` / `go vet ./...` / `go test ./...`; do not run the binary.

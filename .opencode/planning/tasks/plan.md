@@ -6,7 +6,7 @@ Add a **read-only MCP server** to the existing Go/Fiber app per `docs/19-mcp-ser
 server speaks the MCP **Streamable HTTP** transport on `/api/mcp` (same port as the HTTP API),
 authorizes every request with a static **bearer token** (`MCP_BEARER_TOKEN`) compared via
 SHA-256 `subtle.ConstantTimeCompare`, and exposes three tools: `ping`, `whoami`,
-`search_users`. Every tool call writes one `mcp_audit_logs` row.
+`search_users`. Tool calls are not persisted; MCP writes nothing to the database.
 
 MCP is a delivery adapter like the HTTP routes: no separate process, port, or queue.
 
@@ -37,10 +37,9 @@ limits are deferred until the read-only surface is stable and a DB is available.
   `MCP_SCOPES`, `MCP_MAX_BODY_BYTES`, `MCP_ALLOWED_ORIGINS`, `MCP_SESSION_TIMEOUT`,
   `MCP_STATELESS` to the envconfig config struct; `MCP_BEARER_TOKEN` required when
   `MCP_ENABLED=true` (startup fails if empty). Update `.env.example` only, never `.env`.
-- **Audit**: one `mcp_audit_logs` row per tool call, written by a shared wrapper (not inside
-  tool bodies). New migration `000003_...mcp_audit_logs.up.sql` follows the existing
-  migrations pattern. DB is optional at runtime — app must compile and serve non-MCP routes
-  with nil DB; audit write becomes a no-op when DB is nil.
+- **No audit persistence** (user decision): tool calls are not stored in the database and no
+  `mcp_audit_logs` table or migration is created. The read-only tools only read the users
+  table. DB remains optional at runtime.
 - **`search_users`**: paginated user search by email, max page size 50 — added to the user
   repository interface and implemented for GORM. Verified at code time; GORM user repo
   nil-safe.
@@ -53,7 +52,7 @@ limits are deferred until the read-only surface is stable and a DB is available.
 config MCP_* fields (internal/config/config.go) + .env.example
         │
         ▼
-internal/mcp/{auth,server,handler,audit}.go      tools/system.go (ping, whoami)
+internal/mcp/{auth,server,handler}.go             tools/system.go (ping, whoami)
         │                                               │
         │        ┌──────────────────────────────────────┤
         ▼        ▼
@@ -68,12 +67,7 @@ internal/routes/mcp.go  (adaptor.HTTPHandler → GET/POST /api/mcp)
         ▼
 internal/bootstrap/app.go  (RegisterMCP before RegisterWeb /**/ fallback)
         │
-        └──────────── returned       ▲
-                     │               │
-                     ▼               │
-               audit.go ──mcp_audit_logs──> migration 000003 + repository (wire audit rows)
-
-tools/users.go (search_users) ──> user repository interface + GORM impl (nil-safe)
+        ▼tools/users.go (search_users) ──> user repository interface + GORM impl (nil-safe)
                                        │
                                        ▼
                               wire_api.go / bootstrap DI (Dependencies)
@@ -104,14 +98,13 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
     - `.env.example`
   - Estimated scope: Small (1–2 files + env block).
 
-- [x] Task 2: MCP core files — auth, server, handler, audit + system tools
-  - Description: Create `internal/mcp/{auth,server,handler,audit}.go`. `auth.go` parses the
+- [x] Task 2: MCP core files — auth, server, handler + system tools
+  - Description: Create `internal/mcp/{auth,server,handler}.go`. `auth.go` parses the
     bearer token, stores `bearerHash`, and compares with `subtle.ConstantTimeCompare`.
     `server.go` builds `mcp.NewServer`, registers `ping`/`whoami` via `mcp.AddTool` with
     `jsonschema`-tagged input/output structs, holds a server version. `handler.go` wires
     `WithAuth` around the `mcp.NewStreamableHTTPHandler` result and enforces
-    `MCP_MAX_BODY_BYTES` + `MCP_ALLOWED_ORIGINS` (OPTIONS/CORS). `audit.go` writes one
-    `mcp_audit_logs` row per tool call through a shared wrapper; no-op when DB is nil.
+    `MCP_MAX_BODY_BYTES` + `MCP_ALLOWED_ORIGINS` (OPTIONS/CORS).
     `tools/system.go` implements `ping` (version + time) and `whoami` (actor, scopes,
     version; fails when the actor is unset).
   - Acceptance criteria:
@@ -119,15 +112,13 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
     - [x] `ping`/`whoami` are registered; `whoami` returns actor + scopes.
     - [x] Actor missing for `whoami` → tool error (safe message), not a panic.
     - [x] Oversized body rejected; disallowed origin rejected; correct CORS on OPTIONS.
-    - [x] Audit wrapper appends a row for each tool call (nil-DB path is a no-op).
     - [x] No raw SQL, file path, shell command, or URL accepted by any tool.
   - Verification:
     - [x] `go build ./...`, `go vet ./...`, `go test ./...` clean.
     - [x] Unit tests: auth compare, origin check, body size, whoami-without-actor.
   - Dependencies: Task 1.
   - Files likely touched:
-    - `internal/mcp/auth.go`, `internal/mcp/server.go`, `internal/mcp/handler.go`,
-      `internal/mcp/audit.go`
+    - `internal/mcp/auth.go`, `internal/mcp/server.go`, `internal/mcp/handler.go`
     - `internal/mcp/tools/system.go`
     - `internal/mcp/*_test.go`
     - `go.mod` (+ indirect `github.com/google/jsonschema-go/jsonschema`)
@@ -135,47 +126,40 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 
 ### Checkpoint: Foundations
 
-- [ ] `go build ./...`, `go vet ./...`, `go test ./...` pass.
-- [ ] Auth wrapper rejects missing/invalid tokens; system tools respond through the handler.
-- [ ] Audit wrapper proven at unit level (including nil-DB no-op).
-### Phase 2: Domain Tools — search_users + audit migration
+- [x] `go build ./...`, `go vet ./...`, `go test ./...` pass.
+- [x] Auth wrapper rejects missing/invalid tokens; system tools respond through the handler.
+### Phase 2: Domain Tools — search_users
 
-- [x] Task 3: `mcp_audit_logs` migration + user repository `SearchUsers`
-  - Description: Add `000003_create_mcp_audit_logs.up.sql` (id, tool_name, parameters,
-    result_summary, error_msg, ip_address, user_agent, created_at; follow existing migration
-    pattern from `000001`/`000002`). Also add `SearchUsers(ctx, email, page, pageSize)` to
-    `UserRepository` interface and implement it in the GORM user repository (nil-safe, max 50
-    rows, LIKE %email% query). The audit entity lives under
-    `internal/app/domain/core/entity/mcp_audit_log.go`.
+- [x] Task 3: user repository `SearchUsers` (no MCP table, no migration)
+  - Description: Add `SearchUsers(ctx, email, page, pageSize)` to the `UserRepository`
+    interface and implement it in the GORM user repository (nil-safe, max 50 rows,
+    ILIKE %email% query). No migration and no audit table: the user decided MCP must not
+    create database tables.
   - Acceptance criteria:
-    - [x] Migration uses `BIGINT`/`TIMESTAMPTZ`/text per the schema; rolls back cleanly.
     - [x] `UserRepository.SearchUsers` returns at most 50 rows; nil DB → empty slice, no panic.
     - [x] `SearchUsers` interface added without breaking existing callers.
+    - [x] No new migration and no `mcp_audit_logs` table.
   - Verification:
     - [x] `go build ./...`, `go vet ./...` clean.
     - [x] Unit test for nil-DB path in `SearchUsers`.
   - Dependencies: Task 2 (tools need the repo interface to exist).
   - Files likely touched:
-    - `migrations/000003_create_mcp_audit_logs.up.sql`,
-      `migrations/000003_create_mcp_audit_logs.down.sql`
-    - `internal/app/domain/core/entity/mcp_audit_log.go`
     - `internal/app/application/core/repository/user/repository.go`
-    - `internal/app/infrastructure/commands/migrate.go`
-    - `internal/app/infrastructure/persistence/gorm/user_repository.go`
-    - `internal/app/infrastructure/persistence/gorm/user_repository_test.go`
-  - Estimated scope: Medium (4–6 files).
+    - `internal/app/application/core/repository/user/repository_test.go`
+  - Estimated scope: Small (2 files).
 
 - [ ] Task 4: `search_users` tool
   - Description: Create `internal/mcp/tools/users.go`. Tool input: `{ email: string,
     page: int }`; output: `{ users: [], total: int, page: int, pageSize: int }`. Calls
-    `UserRepository.SearchUsers` through the use case; enforces max page size 50 and max
+    `UserRepository.SearchUsers`; enforces max page size 50 and max
     90-day range (created_at filter). Actor must be set or the tool returns a safe error.
-    Audit rows are written by the shared wrapper in `handler.go`, not inside the tool.
+    No database writes: MCP does not persist tool calls.
   - Acceptance criteria:
     - [ ] Tool registered in `server.go` with scope `mcp:read`.
     - [ ] Returns paginated users matching email; empty list when no match.
     - [ ] Page size capped at 50; actor missing → safe tool error.
     - [ ] No raw SQL, table name, or file path accepted.
+    - [ ] No database write happens during a tool call.
   - Verification:
     - [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
     - [ ] Unit tests: normal call, missing actor, page-size cap.
@@ -188,7 +172,7 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 ### Checkpoint: Domain Tools
 
 - [ ] `search_users` works through the handler; returns users as JSON.
-- [ ] `mcp_audit_logs` migration follows existing pattern.
+- [ ] No new database table or migration from MCP.
 - [ ] `go build ./...`, `go vet ./...`, `go test ./...` pass.
 - [ ] Human reviews before bootstrap/routing work.
 
@@ -197,7 +181,7 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 - [ ] Task 5: `internal/bootstrap/mcp.go` (dependency wiring only)
   - Description: Build the MCP handler from `Dependencies` — config, `*gorm.DB`,
     user repository, actor, version. Returns an `http.Handler` (already wrapped with auth +
-    audit + limits). Contains **no tool logic**. Called from `internal/bootstrap/app.go`
+    limits). Contains **no tool logic**. Called from `internal/bootstrap/app.go`
     before the SPA fallback is registered.
   - Acceptance criteria:
     - [ ] Returns `nil, nil` (or skips registration) when `MCP_ENABLED=false`.
@@ -254,12 +238,10 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 | MCP Go SDK API names drift (still evolving, per docs 19.2) | High | Pin a specific version; verify `mcp.NewServer`, `mcp.AddTool`, `mcp.NewStreamableHTTPHandler` signatures before coding |
 | Fiber `adaptor.HTTPHandler` rebuilds the request, so Fiber locals/token are unavailable | High | Do auth and actor injection on the `net/http` side in `WithAuth`, as docs 19.3 instructs |
 | `/api/mcp` swallowed by `/*` SPA fallback | High | Register MCP before `RegisterWeb`; add a route-order test |
-| No local Postgres → `search_users`/audit untestable end to end | Medium | Nil-DB paths return safe defaults; unit tests cover the logic; real DB test deferred |
-| Audit rows silently dropped when DB is nil in production | Medium | Log a warning once when DB is nil; document that audit requires a DB |
+| No local Postgres → `search_users` untestable end to end | Medium | Nil-DB paths return safe defaults; unit tests cover the logic; real DB test deferred |
 | SSE clients hit the global Fiber write timeout | Medium | Prefer stateless JSON response mode; document the SSE timeout exemption and proxy buffering setting |
 | Token accidentally logged or committed | High | Never log the token; only `.env.example` gets a placeholder; hash stored, raw token not kept |
 | `MCP_ACTOR_USER_ID` unset in production | Medium | `whoami`/`search_users` fail with a safe tool error; document the required variable |
-| Creating `mcp_audit_logs` and MCP now deviates from the spec's Phase 6 deferral | Medium | Recorded as an intentional deviation; read-only scope only, no write tools |
 
 ## Open Questions
 
@@ -268,8 +250,8 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
    Confirm this is acceptable (or move to the documented path).
 2. **v1 tools**: Should `search_users` filter by role/status too, or email only? (Plan assumes
    email only, matching docs 19.5.)
-3. **Audit table schema**: no exact DDL is given in docs 19. Plan proposes the columns in
-   Task 3; confirm or provide the preferred schema.
+3. **Audit storage**: user decided MCP must not create tables or persist tool calls. No
+   `mcp_audit_logs` table; confirm again if audit becomes required.
 4. **Actor identity**: `MCP_ACTOR_USER_ID` must point to an existing user in production.
    Plan assumes the operator sets it; no seeding is done.
 5. **Rate limiting**: docs 19.3 mentions the PostgreSQL `rate_limits` table keyed by token
@@ -277,7 +259,7 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
 
 ## Parallelization Opportunities
 
-- Task 3 (migration + repo method) can proceed in parallel with Task 4's tool skeleton, then
+- Task 3 (repo method) can proceed in parallel with Task 4's tool skeleton, then
   Task 4 finishes against the repo interface.
 - Tasks 5 and 6 are tightly coupled; do them together, and do not change routing in parallel
   with other `/api/*` work.
