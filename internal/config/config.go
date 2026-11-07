@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -34,6 +35,18 @@ type Config struct {
 	JWTSecret     string        `envconfig:"JWT_SECRET"`
 	JWTAccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"3h"`
 	JWTRefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
+
+	// MCP exposes a read-only Model Context Protocol server on MCPPath. It is
+	// disabled per environment when MCP_ENABLED=false.
+	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"true"`
+	MCPPath           string        `envconfig:"MCP_PATH" default:"/api/mcp"`
+	MCPBearerToken    string        `envconfig:"MCP_BEARER_TOKEN"`
+	MCPActorUserID    string        `envconfig:"MCP_ACTOR_USER_ID"`
+	MCPScopes         string        `envconfig:"MCP_SCOPES" default:"mcp:read"`
+	MCPMaxBodyBytes   int64         `envconfig:"MCP_MAX_BODY_BYTES" default:"1048576"`
+	MCPAllowedOrigins string        `envconfig:"MCP_ALLOWED_ORIGINS"`
+	MCPSessionTimeout time.Duration `envconfig:"MCP_SESSION_TIMEOUT" default:"60s"`
+	MCPStateless      bool          `envconfig:"MCP_STATELESS" default:"true"`
 }
 
 func Load() (*Config, error) {
@@ -49,7 +62,42 @@ func Load() (*Config, error) {
 	default:
 		return nil, fmt.Errorf("APP_LOCALE must be one of en, id (got %q)", cfg.AppLocale)
 	}
+	cfg.MCPPath = normalizePath(cfg.MCPPath)
+	if err := cfg.validateMCP(); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
+}
+
+// normalizePath trims surrounding spaces and guarantees a leading slash.
+func normalizePath(p string) string {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "/api/mcp"
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return p
+}
+
+// validateMCP enforces that the static bearer token exists when the endpoint
+// is mounted. A missing token is a hard startup error, never a silent bypass.
+func (c *Config) validateMCP() error {
+	if !c.MCPEnabled {
+		return nil
+	}
+	if strings.TrimSpace(c.MCPBearerToken) == "" {
+		return errors.New("MCP_BEARER_TOKEN is required when MCP_ENABLED=true")
+	}
+	return nil
+}
+
+// MCPTokenHash returns the SHA-256 sum of the configured bearer token. Callers
+// compare this against the hash of a presented token; the raw token is never
+// stored or logged.
+func (c *Config) MCPTokenHash() [32]byte {
+	return sha256.Sum256([]byte(c.MCPBearerToken))
 }
 
 func (c *Config) IsDevelopment() bool {
