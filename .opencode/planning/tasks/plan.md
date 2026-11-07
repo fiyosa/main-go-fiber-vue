@@ -104,7 +104,7 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
     - `.env.example`
   - Estimated scope: Small (1–2 files + env block).
 
-- [ ] Task 2: MCP core files — auth, server, handler, audit + system tools
+- [x] Task 2: MCP core files — auth, server, handler, audit + system tools
   - Description: Create `internal/mcp/{auth,server,handler,audit}.go`. `auth.go` parses the
     bearer token, stores `bearerHash`, and compares with `subtle.ConstantTimeCompare`.
     `server.go` builds `mcp.NewServer`, registers `ping`/`whoami` via `mcp.AddTool` with
@@ -115,15 +115,15 @@ tools/users.go (search_users) ──> user repository interface + GORM impl (nil
     `tools/system.go` implements `ping` (version + time) and `whoami` (actor, scopes,
     version; fails when the actor is unset).
   - Acceptance criteria:
-    - [ ] Correct bearer token passes the wrapper; missing/malformed/wrong token → 401.
-    - [ ] `ping`/`whoami` are registered; `whoami` returns actor + scopes.
-    - [ ] Actor missing for `whoami` → tool error (safe message), not a panic.
-    - [ ] Oversized body rejected; disallowed origin rejected; correct CORS on OPTIONS.
-    - [ ] Audit wrapper appends a row for each tool call (nil-DB path is a no-op).
-    - [ ] No raw SQL, file path, shell command, or URL accepted by any tool.
+    - [x] Correct bearer token passes the wrapper; missing/malformed/wrong token → 401.
+    - [x] `ping`/`whoami` are registered; `whoami` returns actor + scopes.
+    - [x] Actor missing for `whoami` → tool error (safe message), not a panic.
+    - [x] Oversized body rejected; disallowed origin rejected; correct CORS on OPTIONS.
+    - [x] Audit wrapper appends a row for each tool call (nil-DB path is a no-op).
+    - [x] No raw SQL, file path, shell command, or URL accepted by any tool.
   - Verification:
-    - [ ] `go build ./...`, `go vet ./...`, `go test ./...` clean.
-    - [ ] Unit tests: auth compare, origin check, body size, whoami-without-actor.
+    - [x] `go build ./...`, `go vet ./...`, `go test ./...` clean.
+    - [x] Unit tests: auth compare, origin check, body size, whoami-without-actor.
   - Dependencies: Task 1.
   - Files likely touched:
     - `internal/mcp/auth.go`, `internal/mcp/server.go`, `internal/mcp/handler.go`,

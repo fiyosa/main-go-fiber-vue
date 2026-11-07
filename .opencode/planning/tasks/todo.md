@@ -20,17 +20,17 @@ integration tests (no local Postgres).
   - [x] Verify: `go build ./...`, `go vet ./...` clean
   - [x] Verify: unit test for defaults + empty-token failure
 
-- [ ] Task 2: Core files — auth, server, handler, audit + system tools
-  - [ ] `internal/mcp/auth.go`: bearer token parse + `subtle.ConstantTimeCompare`
-  - [ ] `internal/mcp/server.go`: `mcp.NewServer`, register `ping` + `whoami` via `mcp.AddTool`
-  - [ ] `internal/mcp/handler.go`: `WithAuth` → Streamable HTTP handler; body-size limit;
+- [x] Task 2: Core files — auth, server, handler, audit + system tools
+  - [x] `internal/mcp/auth.go`: bearer token parse + `subtle.ConstantTimeCompare`
+  - [x] `internal/mcp/server.go`: `mcp.NewServer`, register `ping` + `whoami` via `mcp.AddTool`
+  - [x] `internal/mcp/handler.go`: `WithAuth` → Streamable HTTP handler; body-size limit;
         origin allowlist + OPTIONS/CORS
-  - [ ] `internal/mcp/audit.go`: one `mcp_audit_logs` row per tool call (nil-DB no-op)
-  - [ ] `internal/mcp/tools/system.go`: `ping` (version + time), `whoami` (actor, scopes)
-  - [ ] `whoami` without actor → safe tool error, no panic
-  - [ ] No tool accepts raw SQL, table name, file path, shell command, or URL
-  - [ ] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
-  - [ ] Verify: unit tests for auth compare, origin check, body size, missing actor
+  - [x] `internal/mcp/audit.go`: one `mcp_audit_logs` row per tool call (nil-DB no-op)
+  - [x] `internal/mcp/tools/system.go`: `ping` (version + time), `whoami` (actor, scopes)
+  - [x] `whoami` without actor → safe tool error, no panic
+  - [x] No tool accepts raw SQL, table name, file path, shell command, or URL
+  - [x] Verify: `go build ./...`, `go vet ./...`, `go test ./...` clean
+  - [x] Verify: unit tests for auth compare, origin check, body size, missing actor
 
 ### Checkpoint — Foundations
 
