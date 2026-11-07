@@ -6,6 +6,9 @@ This file provides guidance to AI coding agents working with code in this reposi
 
 - Do not read any file that contains "env" in its name or path.
 - Write code comments in English.
+- This machine has low specifications. Do NOT run build output (binaries produced by `go build`) unless explicitly requested.
+- To verify Go code, use only `go vet` or `go build ./...`. Never execute the resulting binary.
+- When running `go build`, always write the output binary into `./tmp` (for example `go build -o ./tmp/app.exe .`). Never let build output land in the project root or the working directory.
 
 ## Progress Tracking (Todos)
 

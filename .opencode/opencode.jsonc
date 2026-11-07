@@ -1,9 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
-    "Laptop ini spesifikasinya rendah. JANGAN jalankan hasil build (binary hasil `go build`) kecuali diminta secara eksplisit.",
-    "Untuk memeriksa kode Go, cukup gunakan `go vet` atau `go build ./...` tanpa menjalankan hasilnya.",
-    "GUNAKAN bahasa inggris saat menulis comment pada file."
+    ".opencode/AGENTS.md"
   ],
   "permissions": [
     { "action": "edit", "resource": "*", "effect": "ask" },
@@ -19,12 +17,17 @@
     { "action": "skill", "resource": "caveman-review", "effect": "allow" },
     { "action": "skill", "resource": "caveman-help", "effect": "allow" }
   ],
+  "compaction": {
+    "auto": true,
+    "keep": { "tokens": 15000 },
+    "buffer": 70000
+  },
   "mcp": {
     "servers": {
 	  "codegraph": {
         "type": "local",
         "command": ["codegraph", "serve", "--mcp", "--no-watch"],
-        "disabled": true
+        "disabled": false
       }
     }
   }

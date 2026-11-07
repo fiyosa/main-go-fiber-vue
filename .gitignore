@@ -18,3 +18,5 @@ Thumbs.db
 /logs/
 .codegraph
 public/build
+tmp/
+docs/
