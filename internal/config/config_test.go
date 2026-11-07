@@ -43,8 +43,8 @@ func TestMCPDefaults(t *testing.T) {
 		t.Fatalf("process config: %v", err)
 	}
 
-	if !cfg.MCPEnabled {
-		t.Errorf("MCPEnabled = false, want true")
+	if cfg.MCPEnabled {
+		t.Errorf("MCPEnabled = true, want false")
 	}
 	if cfg.MCPPath != "/api/mcp" {
 		t.Errorf("MCPPath = %q, want %q", cfg.MCPPath, "/api/mcp")

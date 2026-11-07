@@ -36,9 +36,9 @@ type Config struct {
 	JWTAccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"3h"`
 	JWTRefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
 
-	// MCP exposes a Model Context Protocol server on MCPPath. It is disabled per
-	// environment when MCP_ENABLED=false.
-	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"true"`
+	// MCP exposes a Model Context Protocol server on MCPPath. It is off unless
+	// explicitly enabled with MCP_ENABLED=true.
+	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"false"`
 	MCPPath           string        `envconfig:"MCP_PATH" default:"/api/mcp"`
 	MCPToken          string        `envconfig:"MCP_TOKEN"`
 	MCPScopes         string        `envconfig:"MCP_SCOPES" default:"mcp:read"`
