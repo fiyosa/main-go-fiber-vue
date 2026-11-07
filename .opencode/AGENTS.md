@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents working with code in this repository, using OpenCode.
+Guidance for AI coding agents in this repository, using OpenCode.
 
 ## Global Rules
 
@@ -12,186 +12,57 @@ This file provides guidance to AI coding agents working with code in this reposi
 
 ## Progress Tracking (Todos)
 
-The user wants to follow the work as it happens:
-
-- Before starting, post a short `todowrite` list for any task with 3+ distinct steps, multiple files, or a debugging loop.
-- Keep exactly one item `in_progress`; update it immediately when a step starts or finishes.
-- Narrate each phase in one line: what you are doing now and what the result was. The user should not have to guess from tool output alone.
+- Post a `todowrite` list for any task with 3+ distinct steps, multiple files, or a debugging loop.
+- Keep exactly one item `in_progress`; update it the moment a step starts or finishes.
+- Narrate each phase in one line: what you are doing now and what the result was.
 - Mark `completed` only after verification (tests, lint, command output). If blocked, state the cause and the next attempt instead of silently retrying.
 - Add newly discovered follow-ups to the list; cancel stale items.
-- For quick questions or a single trivial edit, answer directly without a todo list, but still say what you are checking.
+- For quick questions or a single trivial edit, skip the list but still say what you are checking.
 
-## Active Systems
+## Intent → Skill
 
-This repository only uses three systems:
+Map intent to a skill even without a slash command:
 
-1. **CodeGraph** — code intelligence for locating and understanding code.
-2. **Agent Skills** — addyosmani/agent-skills for engineering workflows, plus the matching slash commands.
-3. **UI/UX Pro Max** — design system generation for UI/UX work.
+- Feature / new functionality → `spec-driven-development`, then `incremental-implementation` and `test-driven-development`
+- Planning / breakdown → `planning-and-task-breakdown`
+- Bug / unexpected behavior → `debugging-and-error-recovery`
+- Code review → `code-review-and-quality`
+- Refactoring / simplification → `code-simplification`
+- API / interface design → `api-and-interface-design`
+- UI/UX → see UI/UX Pro Max below
 
-Use the matching group below. Do not introduce other agent frameworks or workflows.
+If a task matches a skill, invoke it. Never implement directly when a skill applies. Follow the skill's instructions exactly; do not partially apply them.
 
----
+## Workflow
+
+Lifecycle: DEFINE → `spec` · PLAN → `plan` · BUILD → `build` · VERIFY → `test` · REVIEW → `review` · SHIP → `ship`.
+
+Default sequence: `/spec → /plan → /build → /test → /review → /ship`.
+
+Do not skip ahead (no `/build` before a spec exists, no `/ship` before tests pass) unless the user explicitly asks. `/code-simplify` is optional after `/build` and `/test`. `/webperf` runs for browser-facing UI with meaningful visual or data load. `/ship` is mandatory unless the change is 2 files or fewer, under 50 lines, and touches no auth, payments, data access, or config/env.
+
+Each task in `/build` must pass its own test before the next one starts. `/review` runs before every merge, regardless of change size — lighter weight than `/ship`, single persona.
+
+## Rules
+
+- Ignore these thoughts: "too small for a skill", "just implement quickly", "gather context first". Check for a skill first.
+- Do not introduce other agent frameworks or workflows. This project uses only CodeGraph, Agent Skills, and UI/UX Pro Max.
+- Do not build a router persona that decides which other persona to call; that is the job of slash commands and intent mapping.
+- Skills are the _how_ (`.opencode/skills/<name>/SKILL.md`), slash commands are the _when_ (`.opencode/commands/*.md`), personas are review perspectives (`.opencode/agent-skills/*.md`).
+- The user or a slash command orchestrates. Personas never invoke other personas; a persona may invoke skills. The only fan-out is `/ship` running `code-reviewer`, `security-auditor`, and `test-engineer` in sequence, then merging their reports.
+- All skill, agent, and reference paths inside SKILL.md and command files resolve relative to `.opencode/`.
+- Checklists live in `.opencode/references/`: `security`, `performance`, `accessibility`, `testing-patterns`, `observability`, `definition-of-done`, `orchestration-patterns`. Load them when a skill needs detail beyond its SKILL.md.
 
 ## CodeGraph
 
-<!-- CODEGRAPH_START -->
-
-In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
-
-- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
-- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
-
-If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
-<!-- CODEGRAPH_END -->
-
----
-
-## Agent Skills
-
-OpenCode uses a **skill-driven execution model**. Skills live in `.opencode/skills/`, reference checklists live in `.opencode/references/`, and custom slash commands live in `.opencode/commands/`.
-
-### Core Rules
-
-- If a task matches a skill, you MUST invoke it
-- Skills are located in `.opencode/skills/<skill-name>/SKILL.md`
-- Never implement directly if a skill applies
-- Always follow the skill instructions exactly (do not partially apply them)
-
-### Path Resolution
-
-All skill, agent, and reference paths mentioned inside SKILL.md or command files are relative to `.opencode/`. For example, a reference to `references/security-checklist.md` resolves to `.opencode/references/security-checklist.md`.
-
-### Intent → Skill Mapping
-
-The agent should automatically map user intent to skills, even without a slash command:
-
-- Feature / new functionality → `spec-driven-development`, then `incremental-implementation`, `test-driven-development`
-- Planning / breakdown → `planning-and-task-breakdown`
-- Bug / failure / unexpected behavior → `debugging-and-error-recovery`
-- Code review → `code-review-and-quality`
-- Refactoring / simplification → `code-simplification`
-- API or interface design → `api-and-interface-design`
-- UI/UX design → see [UI/UX Pro Max](#uiux-pro-max)
-
-### Slash Commands
-
-This project has custom slash commands defined in `.opencode/commands/`: `/spec`, `/plan`, `/build`, `/test`, `/review`, `/webperf`, `/code-simplify`, `/ship`. These are optional shortcuts that invoke the matching skill directly.
-
-Even without typing a command, the agent must still auto-detect intent from natural language and invoke the matching skill.
-
-### Lifecycle Mapping
-
-- DEFINE → `spec-driven-development` (or `/spec`)
-- PLAN → `planning-and-task-breakdown` (or `/plan`)
-- BUILD → `incremental-implementation` + `test-driven-development` (or `/build`)
-- VERIFY → `debugging-and-error-recovery` (or `/test`)
-- REVIEW → `code-review-and-quality` (or `/review`)
-- SHIP → `shipping-and-launch` (or `/ship`)
-
-### Standard Workflow
-
-The default sequence for building a new feature, end to end:
-
-```
-/spec → /plan → /build → /test → /review → /ship
-```
-
-For UI/UX work, ui-ux-pro-max runs before or during `/spec`, its design decisions (colors, layout, typography) should already be reflected in the spec before `/plan` breaks it into tasks.
-
-```
-ui-ux-pro-max → /spec → /plan → /build → /test → /review → (/webperf if UI-heavy) → /ship
-```
-
-Guidance for each step:
-
-- **/spec** — always the starting point for a new feature or significant change. Do not skip straight to `/plan` or `/build` without a spec.
-- **/plan** — run once the spec is confirmed. Breaks the spec into small, verifiable tasks.
-- **/build** — implements one task at a time (or the whole plan with `/build auto`). Each task must pass its own test before moving to the next.
-- **/test** — used standalone for the Prove-It pattern on bug fixes, or as part of `/build`'s RED-GREEN-REFACTOR loop for new features.
-- **/code-simplify** — optional, run after `/build` and `/test` pass, when the working code needs cleanup without behavior changes. Not part of the mandatory path.
-- **/review** — run before every merge, regardless of change size. Lighter weight than `/ship`, single-persona.
-- **/webperf** — run when the change touches browser-facing UI with meaningful visual or data load (images, charts, large lists, real-time data). Skip for backend-only or CLI changes.
-- **/ship** — the final gate before deploying to production. Mandatory fan-out review unless the change is trivial: 2 files or fewer, under 50 lines, and does not touch auth, payments, data access, or config/env. Otherwise `/ship` is required even for small-looking diffs.
-
-Do not jump ahead in the sequence (e.g. `/build` before `/spec` exists, or `/ship` before `/test` has passed) unless the user explicitly asks to skip a step.
-
-### Execution Model
-
-For every request:
-
-1. For multi-step work, post a `todowrite` list and narrate each phase (see Progress Tracking)
-2. Determine if any skill applies (even 1% chance)
-3. Read the appropriate skill file from `.opencode/skills/`
-4. Follow the skill workflow strictly
-5. Only proceed to implementation after required steps (spec, plan, etc.) are complete
-
-### Anti-Rationalization
-
-The following thoughts are incorrect and must be ignored:
-
-- "This is too small for a skill"
-- "I can just quickly implement this"
-- "I'll gather context first"
-
-Correct behavior:
-
-- Always check for and use skills first
-
-### Orchestration: Personas, Skills, and Commands
-
-This project has three composable layers. They have different jobs and should not be confused:
-
-- **Skills** (`.opencode/skills/<name>/SKILL.md`) — workflows with steps and exit criteria. The _how_. Mandatory hops when an intent matches.
-- **Slash commands** (`.opencode/commands/*.md`) — user-facing entry points. The _when_. The orchestration layer.
-- **Personas** (`.opencode/agent-skills/*.md`) — specialist review perspectives used by commands such as `/ship` and `/webperf`.
-
-Composition rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas.** A persona may invoke skills.
-
-The only multi-persona pattern this project uses is **sequential fan-out with a merge step** — used by `/ship` to run `code-reviewer`, `security-auditor`, and `test-engineer` in sequence and synthesize their reports. Do not build a "router" persona that decides which other persona to call; that's the job of slash commands and intent mapping.
-
-See `.opencode/references/orchestration-patterns.md` for the full pattern catalog.
-
-### Reference Checklists
-
-Supplementary checklists live in `.opencode/references/`: `security-checklist.md`, `performance-checklist.md`, `accessibility-checklist.md`, `testing-patterns.md`, `observability-checklist.md`, `definition-of-done.md`, `orchestration-patterns.md`. Load these when a skill needs detail beyond what's in its SKILL.md.
-
----
+If `.codegraph/` exists at the repo root, use it before grep/find or reading files: the `codegraph_explore` MCP tool, or `codegraph explore "<symbols or question>"` in the shell. Skip CodeGraph entirely if `.codegraph/` is absent. Indexing is the user's decision — never run `codegraph init` yourself.
 
 ## UI/UX Pro Max
 
-The `ui-ux-pro-max` skill is installed at `.opencode/skills/ui-ux-pro-max/SKILL.md`. It auto-activates independently from the engineering skills above and provides design system generation (layout patterns, color palettes, typography, anti-patterns) for UI/UX requests.
+`ui-ux-pro-max` auto-activates on UI/UX requests ("build a landing page", "create a dashboard", "design a..."). It runs before or during `/spec`, and its design decisions belong in the spec before `/plan`. It does not replace the lifecycle: `frontend-ui-engineering` still guides implementation.
 
-- Trigger words: "build a landing page", "create a dashboard", "design a...", "make a UI for..."
-- This skill activates on its own detection logic, separate from the Intent → Skill Mapping rules above.
-- It runs alongside, not instead of, the engineering skills. A UI request should still follow the normal lifecycle:
-  1. ui-ux-pro-max generates the design system (colors, layout, typography)
-  2. `spec-driven-development` captures the technical spec if the work is a new feature
-  3. `frontend-ui-engineering` guides code structure and implementation quality
-  4. `incremental-implementation` + `test-driven-development` for the build itself
+## Caveman
 
-Do not let ui-ux-pro-max's design output skip the spec/build/test lifecycle for anything beyond a trivial visual tweak.
+Caveman mode is active unless the user says "stop caveman" or "normal mode". Default mode is full; `/caveman lite`, `/caveman full`, `/caveman ultra`, `/caveman wenyan`, `/caveman wenyan-lite`, and `/caveman wenyan-ultra` switch intensity for the current session. Respond terse, keep technical substance exact, drop filler. Use normal clarity for code, commits, PR descriptions, destructive confirmations, and security findings.
 
----
-
-## Caveman OpenCode Rules
-
-Caveman mode active in this project unless user says "stop caveman" or "normal mode".
-
-Respond terse like smart caveman. Technical substance exact. Only fluff die.
-
-Drop articles, filler, pleasantries, and hedging. Fragments OK. Use short synonyms. Keep code, commands, quoted errors, identifiers, and security warnings exact.
-
-Pattern: `[thing] [action] [reason]. [next step].`
-
-Default mode: full. `/caveman lite`, `/caveman full`, `/caveman ultra`, `/caveman wenyan`, `/caveman wenyan-lite`, and `/caveman wenyan-ultra` switch intensity for current session.
-
-Code, commits, PR descriptions, destructive confirmations, and security findings use normal clarity when compression risks misread.
-
-Available OpenCode skills:
-
-- `caveman`: persistent terse communication mode.
-- `caveman-commit`: terse Conventional Commit messages.
-- `caveman-review`: one-line code review comments.
-- `caveman-help`: quick reference card.
-- `caveman-compress`: compress markdown memory files while preserving technical content.
+Skills: `caveman`, `caveman-commit`, `caveman-review`, `caveman-help`, `caveman-compress`.
