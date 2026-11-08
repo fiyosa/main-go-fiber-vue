@@ -1,0 +1,130 @@
+/* Neo-Brutalism style module. Everything here is scoped to `.guest-brutal`
+   so nothing outside `pages/guest` can resolve the brutal tokens. */
+
+/* Self-hosted fonts. Files live in src/assets/resources so the app never makes
+   a network request for typography. Space Grotesk ships as one variable file. */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('../../../assets/resources/space-grotesk-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../../assets/resources/space-mono-400-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../../assets/resources/space-mono-700-latin.woff2') format('woff2');
+}
+
+/* Tokens stay as runtime custom properties on the guest wrapper. Utilities
+   generated from `@theme inline` read these variables directly, so an element
+   outside the wrapper inherits nothing and paints nothing. */
+.guest-brutal {
+  --guest-bg: #fffdf5;
+  --guest-surface: #ffffff;
+  --guest-fg: #000000;
+  --guest-muted-bg: #f2eedf;
+
+  --guest-hot-red: #ff6b6b;
+  --guest-vivid-yellow: #ffd93d;
+  --guest-soft-violet: #c4b5fd;
+  --guest-mint: #4ecdc4;
+  --guest-sky: #2196f3;
+
+  --guest-font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --guest-font-mono: 'Space Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  --guest-shadow-brutal: 6px 6px 0 0 var(--guest-fg);
+  --guest-shadow-brutal-sm: 4px 4px 0 0 var(--guest-fg);
+  --guest-shadow-brutal-press: 2px 2px 0 0 var(--guest-fg);
+}
+
+.dark .guest-brutal {
+  /* Deep navy instead of neutral black: three surface levels stay clearly
+     separated and the flat accents pop against a cool backdrop. */
+  --guest-bg: #0f172a;
+  --guest-surface: #1b263b;
+  --guest-fg: #f8fafc;
+  --guest-muted-bg: #27334a;
+}
+
+@theme inline {
+  --font-display: var(--guest-font-display);
+  --font-mono: var(--guest-font-mono);
+
+  --color-bg: var(--guest-bg);
+  --color-surface: var(--guest-surface);
+  --color-fg: var(--guest-fg);
+  --color-muted-bg: var(--guest-muted-bg);
+
+  --color-hot-red: var(--guest-hot-red);
+  --color-vivid-yellow: var(--guest-vivid-yellow);
+  --color-soft-violet: var(--guest-soft-violet);
+  --color-mint: var(--guest-mint);
+  --color-sky: var(--guest-sky);
+
+  --shadow-brutal: var(--guest-shadow-brutal);
+  --shadow-brutal-sm: var(--guest-shadow-brutal-sm);
+  --shadow-brutal-press: var(--guest-shadow-brutal-press);
+}
+
+@layer base {
+  /* Custom properties from the wrapper cannot reach `body`, so the guest
+     background uses literal values that match the tokens above. */
+  body:has(.guest-brutal) {
+    background-color: #fffdf5;
+    color: #000000;
+    font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  }
+
+  /* Dark mode gets a faint local dot grid so the background reads as paper
+     instead of an empty black rectangle. Inline SVG keeps it offline. */
+  .dark body:has(.guest-brutal) {
+    background-color: #0f172a;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23f8fafc' fill-opacity='0.03'/%3E%3C/svg%3E");
+    background-size: 24px 24px;
+  }
+
+  .guest-brutal ::selection {
+    background-color: var(--guest-vivid-yellow);
+    color: #000000;
+  }
+
+  .guest-brutal :focus-visible {
+    outline: 3px solid var(--guest-fg);
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  /* Press feedback lives in the utilities layer so it can override the
+     per-component shadow utilities at equal specificity. */
+  .brutal-press {
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  .brutal-press:active {
+    transform: translate(3px, 3px);
+    box-shadow: var(--guest-shadow-brutal-press);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brutal-press:active {
+    transform: none;
+    box-shadow: var(--guest-shadow-brutal);
+  }
+}

@@ -1,18 +1,37 @@
 @import 'tailwindcss';
+/* The guest stylesheet owns the Neo-Brutalism design tokens. Importing it from
+   the app entry keeps Tailwind processing `@theme` in one pass while the
+   tokens themselves only resolve inside `.guest-brutal`. */
+@import './pages/guest/style/brutal.css';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Neutral host: no brand tokens live here so non-guest surfaces stay plain. */
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    font-family:
-      system-ui,
-      -apple-system,
-      'Segoe UI',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

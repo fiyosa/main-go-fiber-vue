@@ -4,18 +4,42 @@
 
   import { getHealth } from '../../api/health'
   import type { HealthData } from '../../api/health'
-  import { img } from '../../assets/img'
+  import { BrutalBadge, BrutalButton, BrutalCard } from '../../components/ui'
   import { useCountStore, useToggleStore } from '../../store/data'
-  import { useUIStore } from '../../store/ui'
 
   const count = useCountStore()
   const toggle = useToggleStore()
-  const ui = useUIStore()
 
   const health = ref<HealthData | null>(null)
   const healthError = ref<string | null>(null)
   const healthLoading = ref(false)
-  const healthTone = computed(() => (healthError.value ? 'text-rose-400' : 'text-slate-300'))
+
+  // Single source of truth for the health card so the badge and the message
+  // never disagree.
+  const healthState = computed<'checking' | 'error' | 'ok'>(() => {
+    if (healthLoading.value) return 'checking'
+    if (healthError.value) return 'error'
+    return 'ok'
+  })
+
+  const healthLabel = computed(() => {
+    if (healthState.value === 'checking') return 'Checking'
+    if (healthState.value === 'error') return 'Offline'
+    return health.value?.status ?? 'Unknown'
+  })
+
+  const healthTone = computed(() => {
+    if (healthState.value === 'error') return 'hot-red'
+    if (healthState.value === 'checking') return 'soft-violet'
+    return 'mint'
+  })
+
+  const stats = [
+    { label: 'Router', value: 'Vue 3', tone: 'mint' },
+    { label: 'State', value: 'Pinia', tone: 'soft-violet' },
+    { label: 'Styling', value: 'Tailwind v4', tone: 'sky' },
+    { label: 'HTTP', value: 'Axios', tone: 'vivid-yellow' },
+  ] as const
 
   onMounted(async () => {
     healthLoading.value = true
@@ -30,85 +54,118 @@
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-950 text-slate-100">
-    <div class="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
-      <header class="flex flex-wrap items-center justify-between gap-4">
-        <RouterLink to="/" class="flex items-center gap-3 text-lg font-semibold">
-          <img :src="img.vite" alt="" class="h-8 w-8" />
-          <span>App</span>
-        </RouterLink>
-        <nav class="flex items-center gap-4 text-sm">
-          <RouterLink to="/about" class="text-slate-300 transition hover:text-white"> About </RouterLink>
-          <button
-            type="button"
-            class="rounded-md border border-slate-700 px-3 py-1.5 text-slate-200 transition hover:border-teal-400 hover:text-white"
-            @click="ui.toggleSidebar()"
+  <div class="flex flex-col gap-8">
+    <section class="grid items-center gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <div class="flex flex-col items-start gap-4">
+        <BrutalBadge tone="hot-red" :rotation="-2">Neo-Brutalism UI</BrutalBadge>
+
+        <h1 class="text-4xl leading-none font-bold tracking-tight sm:text-5xl">
+          Frontend scaffold with
+          <span class="bg-vivid-yellow px-2 text-black">hard edges</span>
+        </h1>
+
+        <p class="max-w-xl text-base leading-relaxed">
+          Router, Pinia stores, an axios client and a brutalist component set. Every theme, font and asset is served
+          from this project — no CDN, no network fetch.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <RouterLink
+            to="/about"
+            class="brutal-press inline-flex min-h-12 items-center justify-center border-[3px] border-fg bg-vivid-yellow px-6 font-mono text-sm font-bold tracking-widest text-black uppercase shadow-brutal-sm"
           >
-            Sidebar: {{ ui.sidebarOpen ? 'open' : 'closed' }}
-          </button>
-        </nav>
-      </header>
-
-      <section
-        class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-2xl shadow-teal-500/10"
-      >
-        <img :src="img.hero" alt="" class="h-48 w-full object-cover" />
-        <div class="grid gap-6 p-8 md:grid-cols-2">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold tracking-[0.2em] text-teal-400 uppercase">Vue + Tailwind + Pinia + Axios</p>
-            <h1 class="text-3xl font-bold tracking-tight">Frontend scaffolding</h1>
-            <p class="text-sm leading-relaxed text-slate-400">
-              Router, Pinia stores, axios client, and TanStack Query are wired up. Replace this page with the real
-              application shell.
-            </p>
-          </div>
-
-          <div class="space-y-4">
-            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p class="text-xs tracking-wider text-slate-500 uppercase">Pinia counter</p>
-              <div class="mt-2 flex items-center gap-3">
-                <button
-                  type="button"
-                  class="h-8 w-8 rounded-md bg-slate-800 text-lg leading-none transition hover:bg-slate-700"
-                  @click="count.decrement()"
-                >
-                  -
-                </button>
-                <span class="min-w-10 text-center text-xl font-semibold">{{ count.count }}</span>
-                <button
-                  type="button"
-                  class="h-8 w-8 rounded-md bg-teal-500 text-lg leading-none text-slate-950 transition hover:bg-teal-400"
-                  @click="count.increment()"
-                >
-                  +
-                </button>
-                <span class="ml-auto text-xs text-slate-500">double: {{ count.double }}</span>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <span class="text-sm text-slate-400">Toggle</span>
-              <button
-                type="button"
-                class="rounded-full px-3 py-1 text-xs font-semibold transition"
-                :class="toggle.active ? 'bg-teal-500 text-slate-950' : 'bg-slate-800 text-slate-300'"
-                @click="toggle.toggle()"
-              >
-                {{ toggle.active ? 'active' : 'inactive' }}
-              </button>
-            </div>
-
-            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm">
-              <p class="text-xs tracking-wider text-slate-500 uppercase">API health</p>
-              <p class="mt-2" :class="healthTone">
-                <span v-if="healthLoading">checking...</span>
-                <span v-else-if="healthError">{{ healthError }}</span>
-                <span v-else>{{ health?.status ?? 'unknown' }}</span>
-              </p>
-            </div>
-          </div>
+            Explore layout
+          </RouterLink>
+          <a
+            href="#demos"
+            class="brutal-press inline-flex min-h-12 items-center justify-center border-[3px] border-fg bg-surface px-6 font-mono text-sm font-bold tracking-widest text-fg uppercase shadow-brutal-sm"
+          >
+            See demos
+          </a>
         </div>
-      </section>
-    </div>
-  </main>
+      </div>
+
+      <BrutalCard accent="vivid-yellow" tone="muted" class="rotate-1">
+        <template #header>Quick start</template>
+
+        <ol class="flex flex-col gap-3 font-mono text-sm">
+          <li class="flex gap-3">
+            <span class="border-[3px] border-fg bg-mint px-2 font-bold text-black">1</span>
+            <span>Install dependencies</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="border-[3px] border-fg bg-soft-violet px-2 font-bold text-black">2</span>
+            <span>Run the Go server</span>
+          </li>
+          <li class="flex gap-3">
+            <span class="border-[3px] border-fg bg-sky px-2 font-bold text-black">3</span>
+            <span>Open the SPA</span>
+          </li>
+        </ol>
+      </BrutalCard>
+    </section>
+
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Stack">
+      <BrutalCard v-for="stat in stats" :key="stat.label" :accent="stat.tone">
+        <template #header>{{ stat.label }}</template>
+        <p class="text-2xl font-bold">{{ stat.value }}</p>
+      </BrutalCard>
+    </section>
+
+    <section id="demos" class="grid gap-6 lg:grid-cols-3" aria-label="Interactive demos">
+      <BrutalCard accent="mint" class="lg:col-span-1">
+        <template #header>Pinia counter</template>
+
+        <div class="flex items-center gap-3">
+          <BrutalButton variant="ghost" size="sm" aria-label="Decrease count" @click="count.decrement()">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="size-5">
+              <path d="M4 12h16" stroke="currentColor" stroke-width="3" />
+            </svg>
+          </BrutalButton>
+
+          <span class="min-w-16 border-[3px] border-fg bg-surface px-3 py-2 text-center text-2xl font-bold">
+            {{ count.count }}
+          </span>
+
+          <BrutalButton size="sm" aria-label="Increase count" @click="count.increment()">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="size-5">
+              <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="3" />
+            </svg>
+          </BrutalButton>
+        </div>
+
+        <p class="mt-4 font-mono text-xs tracking-widest uppercase">Double: {{ count.double }}</p>
+      </BrutalCard>
+
+      <BrutalCard accent="soft-violet">
+        <template #header>Toggle</template>
+
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm">Store state</span>
+          <BrutalButton
+            size="sm"
+            :variant="toggle.active ? 'primary' : 'ghost'"
+            :aria-pressed="toggle.active"
+            @click="toggle.toggle()"
+          >
+            {{ toggle.active ? 'Active' : 'Inactive' }}
+          </BrutalButton>
+        </div>
+      </BrutalCard>
+
+      <BrutalCard :accent="healthTone">
+        <template #header>API health</template>
+
+        <div class="flex flex-col gap-3">
+          <BrutalBadge :tone="healthTone">{{ healthLabel }}</BrutalBadge>
+
+          <p class="font-mono text-xs break-all">
+            <span v-if="healthState === 'checking'">Waiting for response...</span>
+            <span v-else-if="healthState === 'error'">{{ healthError }}</span>
+            <span v-else>Endpoint responded successfully.</span>
+          </p>
+        </div>
+      </BrutalCard>
+    </section>
+  </div>
 </template>

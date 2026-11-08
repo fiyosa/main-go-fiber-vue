@@ -10,13 +10,16 @@ import { defineConfig } from 'vitest/config'
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const publicDir = fileURLToPath(new URL('../public', import.meta.url))
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   // Read the single .env at the repository root so the frontend and the Go
   // backend share the same configuration.
   const env = loadEnv(mode, repoRoot, '')
   const apiTarget = `http://localhost:${env.APP_PORT || '8080'}`
 
   return {
+    // Production serves the bundle only under /build (see internal/routes/web.go),
+    // so every generated asset URL must be prefixed. The dev server keeps "/".
+    base: command === 'build' ? '/build/' : '/',
     plugins: [vue(), tailwindcss()],
     envDir: repoRoot,
     publicDir,
@@ -36,9 +39,11 @@ export default defineConfig(({ mode }) => {
         input: 'src/main.ts',
         output: {
           entryFileNames: 'index.js',
-          chunkFileNames: 'assets/[name]-[hash].js',
+          // Everything under build/assets is named by hash only, so the output
+          // never leaks source file names. CSS keeps its fixed flat name.
+          chunkFileNames: 'assets/[hash].js',
           assetFileNames: (assetInfo) => {
-            return assetInfo.name?.endsWith('.css') ? 'index.css' : 'assets/[name]-[hash][extname]'
+            return assetInfo.name?.endsWith('.css') ? 'index.css' : 'assets/[hash][extname]'
           },
         },
       },

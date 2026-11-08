@@ -1,19 +1,29 @@
 <script setup lang="ts">
   import { RouterLink } from 'vue-router'
+
+  import { BrutalBadge, BrutalCard } from '../../components/ui'
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-slate-100">
-    <div class="space-y-4 text-center">
-      <p class="text-7xl font-black text-teal-400">404</p>
-      <h1 class="text-xl font-semibold">Page not found</h1>
-      <p class="text-sm text-slate-400">The route you requested does not exist.</p>
-      <RouterLink
-        to="/"
-        class="inline-block rounded-md bg-teal-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-teal-400"
-      >
-        Back home
-      </RouterLink>
-    </div>
-  </main>
+  <div class="flex min-h-[50vh] items-center justify-center">
+    <BrutalCard accent="hot-red" tone="surface" class="w-full max-w-lg -rotate-1 text-center">
+      <template #header>Route error</template>
+
+      <div class="flex flex-col items-center gap-4">
+        <BrutalBadge tone="vivid-yellow" :rotation="-3">404</BrutalBadge>
+
+        <p class="text-6xl leading-none font-bold tracking-tight sm:text-7xl">Lost?</p>
+
+        <h1 class="text-xl font-bold">Page not found</h1>
+        <p class="text-sm leading-relaxed">The route you requested does not exist or was moved.</p>
+
+        <RouterLink
+          to="/"
+          class="brutal-press inline-flex min-h-12 items-center justify-center border-[3px] border-fg bg-mint px-6 font-mono text-sm font-bold tracking-widest text-black uppercase shadow-brutal-sm"
+        >
+          Back home
+        </RouterLink>
+      </div>
+    </BrutalCard>
+  </div>
 </template>
