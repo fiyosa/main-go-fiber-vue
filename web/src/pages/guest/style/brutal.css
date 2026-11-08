@@ -1,14 +1,15 @@
 /* Neo-Brutalism style module. Everything here is scoped to `.guest-brutal`
    so nothing outside `pages/guest` can resolve the brutal tokens. */
 
-/* Self-hosted fonts. Files live in src/assets/resources so the app never makes
-   a network request for typography. Space Grotesk ships as one variable file. */
+/* Self-hosted fonts. Files live in pages/guest/assets/fonts so the app never
+   makes a network request for typography. Space Grotesk ships as one variable
+   file. */
 @font-face {
   font-family: 'Space Grotesk';
   font-style: normal;
   font-weight: 300 700;
   font-display: swap;
-  src: url('../../../assets/resources/space-grotesk-latin.woff2') format('woff2');
+  src: url('../assets/fonts/space-grotesk-latin.woff2') format('woff2');
 }
 
 @font-face {
@@ -16,7 +17,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../../../assets/resources/space-mono-400-latin.woff2') format('woff2');
+  src: url('../assets/fonts/space-mono-400-latin.woff2') format('woff2');
 }
 
 @font-face {
@@ -24,7 +25,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('../../../assets/resources/space-mono-700-latin.woff2') format('woff2');
+  src: url('../assets/fonts/space-mono-700-latin.woff2') format('woff2');
 }
 
 /* Tokens stay as runtime custom properties on the guest wrapper. Utilities

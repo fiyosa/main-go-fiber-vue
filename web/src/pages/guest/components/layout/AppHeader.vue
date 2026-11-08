@@ -2,7 +2,7 @@
   import { computed } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
 
-  import { useUIStore } from '../../store/ui'
+  import { useUIStore } from '../../../../store/ui'
 
   const ui = useUIStore()
   const route = useRoute()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { RouterLink } from 'vue-router'
 
-  import { BrutalBadge, BrutalButton, BrutalCard } from '../../components/ui'
+  import { BrutalBadge, BrutalButton, BrutalCard } from './components/ui'
 
   const folders = [
     { name: 'api', detail: 'Endpoint wrappers, one folder per feature.' },

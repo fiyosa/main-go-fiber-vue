@@ -161,15 +161,15 @@ brutal tokens, fonts, primitives, or chrome. Status: proposed, awaiting approval
 
 ### R2 — Move primitives, chrome, fonts into guest
 
-- [ ] Move `components/ui/*` → `pages/guest/components/ui/` (keep barrel)
-- [ ] Move `components/layout/*` → `pages/guest/components/layout/` (keep barrel)
-- [ ] Move `assets/resources/*.woff2` + licenses → `pages/guest/assets/fonts/`
-- [ ] Update imports in Home, About, 404, `GuestLayout`
-- [ ] Update `@font-face` URLs in `brutal.css`
-- [ ] Delete `web/src/components/` and `web/src/assets/resources/`
-- [ ] Verify: no imports of brutal components outside guest; fonts load offline in built bundle; no external `http(s)` URLs
-- [ ] Verify: `npm --prefix web run format:check`; `npm --prefix web run build`
-- [ ] Checkpoint C2: structure isolated
+- [x] Move `components/ui/*` → `pages/guest/components/ui/` (keep barrel)
+- [x] Move `components/layout/*` → `pages/guest/components/layout/` (keep barrel)
+- [x] Move `assets/resources/*.woff2` + licenses → `pages/guest/assets/fonts/`
+- [x] Update imports in Home, About, 404, `GuestLayout`
+- [x] Update `@font-face` URLs in `brutal.css`
+- [x] Delete `web/src/components/` and `web/src/assets/resources/`
+- [x] Verify: no imports of brutal components outside guest; fonts load offline in built bundle; no external `http(s)` URLs
+- [x] Verify: `npm --prefix web run format:check`; `npm --prefix web run build`
+- [x] Checkpoint C2: structure isolated
 
 ### R3 — Home slice parity
 

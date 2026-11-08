@@ -4,7 +4,7 @@
 
   import { getHealth } from '../../api/health'
   import type { HealthData } from '../../api/health'
-  import { BrutalBadge, BrutalButton, BrutalCard } from '../../components/ui'
+  import { BrutalBadge, BrutalButton, BrutalCard } from './components/ui'
   import { useCountStore, useToggleStore } from '../../store/data'
 
   const count = useCountStore()
