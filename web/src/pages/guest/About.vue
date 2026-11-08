@@ -3,8 +3,9 @@
   import { profile } from './content/profile'
 
   // Anchors share the BrutalButton shape without nesting a button inside a link.
+  // The contact anchor must not uppercase, so the email stays lowercase.
   const primaryLinkClasses =
-    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-vivid-yellow px-6 font-mono text-sm font-bold tracking-widest text-black uppercase shadow-brutal-sm'
+    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-vivid-yellow px-6 font-mono text-sm font-bold tracking-widest text-black shadow-brutal-sm'
 
   const secondaryLinkClasses =
     'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-surface px-6 font-mono text-sm font-bold tracking-widest text-fg uppercase shadow-brutal-sm'
@@ -30,7 +31,6 @@
         </p>
 
         <div class="flex flex-wrap items-center gap-3">
-          <a :href="`mailto:${profile.email}`" :class="primaryLinkClasses">Email me</a>
           <a href="#projects" :class="secondaryLinkClasses">See projects</a>
         </div>
       </div>

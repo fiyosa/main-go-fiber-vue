@@ -9,7 +9,7 @@
 
   const links = [
     { name: 'home', to: '/', label: 'Home' },
-    { name: 'about', to: '/about', label: 'Profile' },
+    { name: 'about', to: '/about', label: 'About' },
   ] as const
 
   // Base shape only; the background swaps so the active route is an inverted
