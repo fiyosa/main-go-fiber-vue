@@ -181,6 +181,9 @@ brutal tokens, fonts, primitives, or chrome. Status: proposed, awaiting approval
 
 ### R4 — About + 404 slice parity
 
+- [x] `/about` replaced with portfolio (commit `17b7d75` + `c809a23`): content in
+      `content/profile.ts`, `About.vue` presentational; hero "Email me" CTA
+      removed; contact email lowercase; nav label stays `About`
 - [ ] Visual parity, light + dark for `/about` and catch-all 404
 - [ ] Unknown URL still resolves to `not-found`; no redirect or URL change
 - [ ] 404 CTA returns to `/` without full reload
