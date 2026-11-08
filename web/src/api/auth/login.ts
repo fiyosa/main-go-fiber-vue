@@ -15,10 +15,10 @@ export interface LoginResponse {
   refresh_token: string
 }
 
-/// POST /api/v1/auth/login. The caller is responsible for persisting the token
-/// returned by a successful call.
+/// POST {API_URL}/api/v1/auth/login. The caller is responsible for persisting
+/// the token returned by a successful call.
 export const login = async (payload: LoginRequest): Promise<LoginResponse> =>
   await axiosLib.instance
-    .post<LoginResponse>('/auth/login', payload)
+    .post<LoginResponse>('/api/v1/auth/login', payload)
     .then((res) => res.data)
     .catch((err) => axiosLib.throwAxios(err))

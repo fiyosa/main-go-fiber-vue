@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
-import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 
 // The Go app owns the HTML shell, so the build input is the entry module
@@ -10,12 +9,7 @@ import { defineConfig } from 'vitest/config'
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const publicDir = fileURLToPath(new URL('../public', import.meta.url))
 
-export default defineConfig(({ command, mode }) => {
-  // Read the single .env at the repository root so the frontend and the Go
-  // backend share the same configuration.
-  const env = loadEnv(mode, repoRoot, '')
-  const apiTarget = `http://localhost:${env.APP_PORT || '8080'}`
-
+export default defineConfig(({ command }) => {
   return {
     // Production serves the bundle only under /build (see internal/routes/web.go),
     // so every generated asset URL must be prefixed. The dev server keeps "/".
@@ -25,15 +19,12 @@ export default defineConfig(({ command, mode }) => {
     publicDir,
     server: {
       port: 5173,
-      proxy: {
-        '/api': apiTarget,
-      },
     },
     build: {
       outDir: '../public/build',
       emptyOutDir: true,
       // The Go server already serves every file in public/ (including
-      // vite.svg), so copying publicDir into outDir would only duplicate it.
+      // favicon.svg), so copying publicDir into outDir would only duplicate it.
       copyPublicDir: false,
       rollupOptions: {
         input: 'src/main.ts',

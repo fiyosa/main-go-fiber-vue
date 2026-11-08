@@ -7,10 +7,10 @@
 <template>
   <footer class="border-t-[3px] border-fg bg-surface">
     <div
-      class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-6 font-mono text-xs tracking-widest uppercase sm:flex-row sm:items-center sm:justify-between"
+      class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-6 font-mono text-xs font-bold tracking-widest uppercase"
     >
-      <p>Vue 3 / Pinia / Tailwind v4 / Axios</p>
-      <p>{{ year }} / Neo-Brutalism UI</p>
+      <p>Portfolio</p>
+      <p>&copy; {{ year }}</p>
     </div>
   </footer>
 </template>
