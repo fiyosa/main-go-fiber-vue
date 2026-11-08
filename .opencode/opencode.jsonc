@@ -18,7 +18,8 @@
   "compaction": {
     "auto": true,
     "keep": { "tokens": 15000 },
-    "buffer": 80000,
+    // "buffer": 58000, // vscode 9router
+    "buffer": 130000, // deepseek opencode
   },
   "mcp": {
     "servers": {
