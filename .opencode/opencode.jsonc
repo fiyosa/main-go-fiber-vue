@@ -18,7 +18,7 @@
   "compaction": {
     "auto": true,
     "keep": { "tokens": 15000 },
-    "buffer": 70000,
+    "buffer": 80000,
   },
   "mcp": {
     "servers": {
