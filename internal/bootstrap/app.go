@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"gorm.io/gorm"
 
+	storagerepo "go-fiber-vue/internal/app/application/core/repository/storage"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
 	"go-fiber-vue/internal/config"
 	"go-fiber-vue/internal/platform/auth"
@@ -27,6 +28,8 @@ type Application struct {
 	Tokens     *auth.Service
 	Translator *lang.Translator
 	MCPHandler http.Handler
+	// Storage is nil when STORAGE_* is not fully configured.
+	Storage storagerepo.Repository
 }
 
 // Router builds a Fiber app with every route registered but no runtime
@@ -106,6 +109,7 @@ func New(cfg *config.Config) (*Application, error) {
 		Tokens:     tokens,
 		Translator: translator,
 		MCPHandler: mcpHandler,
+		Storage:    newStorageRepository(cfg, db),
 	}, nil
 }
 

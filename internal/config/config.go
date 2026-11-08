@@ -39,6 +39,16 @@ type Config struct {
 	JWTAccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"3h"`
 	JWTRefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
 
+	// Storage* configure the S3-compatible object store (Garage in development).
+	// The storage layer stays disabled unless endpoint, bucket and both
+	// credentials are set, so a missing object store never blocks startup.
+	StorageEndpoint  string `envconfig:"STORAGE_ENDPOINT" default:"http://127.0.0.1:3900"`
+	StorageRegion    string `envconfig:"STORAGE_REGION" default:"garage"`
+	StorageBucket    string `envconfig:"STORAGE_BUCKET" default:"app"`
+	StorageAccessKey string `envconfig:"STORAGE_ACCESS_KEY"`
+	StorageSecretKey string `envconfig:"STORAGE_SECRET_KEY"`
+	StoragePathStyle bool   `envconfig:"STORAGE_PATH_STYLE" default:"true"`
+
 	// MCP exposes a Model Context Protocol server on MCPPath. It is off unless
 	// explicitly enabled with MCP_ENABLED=true.
 	MCPEnabled        bool          `envconfig:"MCP_ENABLED" default:"false"`
@@ -108,6 +118,16 @@ func (c *Config) MCPTokenHash() [32]byte {
 
 func (c *Config) IsDevelopment() bool {
 	return c.AppEnv == "development" || c.AppEnv == "local"
+}
+
+// IsStorageConfigured reports whether every required storage setting is
+// present. Bucket-only or credential-only setups stay disabled instead of
+// failing at request time.
+func (c *Config) IsStorageConfigured() bool {
+	return strings.TrimSpace(c.StorageEndpoint) != "" &&
+		strings.TrimSpace(c.StorageBucket) != "" &&
+		strings.TrimSpace(c.StorageAccessKey) != "" &&
+		strings.TrimSpace(c.StorageSecretKey) != ""
 }
 
 // loadDotEnv merges .env into the process environment for local runs. Real
