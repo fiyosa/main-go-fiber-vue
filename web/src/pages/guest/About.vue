@@ -1,142 +1,156 @@
 <script setup lang="ts">
-  import { RouterLink } from 'vue-router'
+  import { BrutalBadge, BrutalCard } from './components/ui'
+  import { profile } from './content/profile'
 
-  import { BrutalBadge, BrutalButton, BrutalCard } from './components/ui'
+  // Anchors share the BrutalButton shape without nesting a button inside a link.
+  const primaryLinkClasses =
+    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-vivid-yellow px-6 font-mono text-sm font-bold tracking-widest text-black uppercase shadow-brutal-sm'
 
-  const folders = [
-    { name: 'api', detail: 'Endpoint wrappers, one folder per feature.' },
-    { name: 'lib', detail: 'Shared axios client and helpers.' },
-    { name: 'store', detail: 'Pinia stores for UI and data state.' },
-    { name: 'pages', detail: 'Routed views and route table.' },
-    { name: 'config', detail: 'Static settings resolved at build time.' },
-  ] as const
+  const secondaryLinkClasses =
+    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-surface px-6 font-mono text-sm font-bold tracking-widest text-fg uppercase shadow-brutal-sm'
 
-  const palette = [
-    { name: 'bg', light: '#FFFDF5', dark: '#0F172A', className: 'bg-bg', text: 'text-fg' },
-    { name: 'surface', light: '#FFFFFF', dark: '#1B263B', className: 'bg-surface', text: 'text-fg' },
-    { name: 'fg', light: '#000000', dark: '#F8FAFC', className: 'bg-fg', text: 'text-bg' },
-    { name: 'muted-bg', light: '#F2EEDF', dark: '#27334A', className: 'bg-muted-bg', text: 'text-fg' },
-    { name: 'hot-red', light: '#FF6B6B', dark: '#FF6B6B', className: 'bg-hot-red', text: 'text-black' },
-    { name: 'vivid-yellow', light: '#FFD93D', dark: '#FFD93D', className: 'bg-vivid-yellow', text: 'text-black' },
-    { name: 'soft-violet', light: '#C4B5FD', dark: '#C4B5FD', className: 'bg-soft-violet', text: 'text-black' },
-    { name: 'mint', light: '#4ECDC4', dark: '#4ECDC4', className: 'bg-mint', text: 'text-black' },
-    { name: 'sky', light: '#2196F3', dark: '#2196F3', className: 'bg-sky', text: 'text-black' },
-  ] as const
-
-  const buttonVariants = [
-    { label: 'Primary', variant: 'primary' },
-    { label: 'Secondary', variant: 'secondary' },
-    { label: 'Ghost', variant: 'ghost' },
-    { label: 'Danger', variant: 'danger' },
-  ] as const
-
-  const badgeTones = ['vivid-yellow', 'hot-red', 'soft-violet', 'mint', 'sky'] as const
+  const projectAccents = ['sky', 'soft-violet'] as const
+  const skillTones = ['sky', 'mint', 'soft-violet', 'vivid-yellow', 'hot-red'] as const
 </script>
 
 <template>
-  <div class="flex flex-col gap-10">
-    <header class="flex flex-col items-start gap-3">
-      <BrutalBadge tone="soft-violet" :rotation="2">About</BrutalBadge>
-      <h1 class="text-4xl leading-none font-bold tracking-tight sm:text-5xl">Design system</h1>
-      <p class="max-w-2xl text-base leading-relaxed">
-        Hard 3px borders, offset shadows and flat accents. Tokens flip with the theme, accents stay fixed, and every
-        font is served from this repository.
-      </p>
-    </header>
+  <div class="flex flex-col gap-14">
+    <!-- Hero -->
+    <section class="grid items-start gap-8 lg:grid-cols-[1.4fr_0.6fr]" aria-labelledby="profile-title">
+      <div class="flex flex-col items-start gap-4">
+        <BrutalBadge tone="hot-red" :rotation="-2">{{ profile.headline }}</BrutalBadge>
 
-    <section class="flex flex-col gap-4" aria-labelledby="typography-heading">
-      <h2 id="typography-heading" class="font-mono text-xs font-bold tracking-[0.2em] uppercase">Typography</h2>
+        <h1 id="profile-title" class="text-4xl leading-none font-bold tracking-tight sm:text-5xl">
+          {{ profile.name }}
+        </h1>
 
-      <BrutalCard accent="sky">
-        <template #header>Space Grotesk / Display</template>
+        <p class="max-w-2xl text-base leading-relaxed">
+          Business web applications and dashboards, designed and built
+          <span class="bg-vivid-yellow px-1 text-black">end to end</span>.
+        </p>
 
-        <div class="flex flex-col gap-3">
-          <p class="text-4xl leading-none font-bold">Aa Bb Cc 0123</p>
-          <p class="text-lg leading-relaxed">The quick brown fox jumps over the lazy dog.</p>
-          <p class="font-mono text-xs tracking-widest uppercase">Space Mono / Labels &amp; metadata</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <a :href="`mailto:${profile.email}`" :class="primaryLinkClasses">Email me</a>
+          <a href="#projects" :class="secondaryLinkClasses">See projects</a>
         </div>
+      </div>
+
+      <BrutalCard accent="vivid-yellow" tone="muted" class="w-full rotate-1">
+        <template #header>Based in</template>
+
+        <p class="text-xl font-bold">{{ profile.location }}</p>
+        <p class="mt-2 font-mono text-xs break-all">{{ profile.email }}</p>
       </BrutalCard>
     </section>
 
-    <section class="flex flex-col gap-4" aria-labelledby="palette-heading">
-      <h2 id="palette-heading" class="font-mono text-xs font-bold tracking-[0.2em] uppercase">Palette</h2>
+    <!-- Summary -->
+    <section id="summary" class="scroll-mt-24" aria-labelledby="summary-title">
+      <h2 id="summary-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Summary</h2>
+      <p class="mt-4 max-w-3xl text-base leading-relaxed">{{ profile.summary }}</p>
+    </section>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div
-          v-for="color in palette"
-          :key="color.name"
-          class="border-[3px] border-fg shadow-brutal-sm"
-          :class="[color.className, color.text]"
+    <!-- Experience -->
+    <section id="experience" class="scroll-mt-24" aria-labelledby="experience-title">
+      <h2 id="experience-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Experience</h2>
+
+      <ol class="mt-6 flex flex-col gap-6 border-l-[3px] border-fg pl-6 sm:pl-8">
+        <li v-for="role in profile.roles" :key="role.company" class="relative">
+          <span
+            aria-hidden="true"
+            class="absolute top-7 -left-[calc(1.5rem+11px)] size-4 border-[3px] border-fg bg-vivid-yellow sm:-left-[calc(2rem+11px)]"
+          ></span>
+
+          <BrutalCard tone="surface" class="w-full">
+            <template #header>{{ role.company }}</template>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <h3 class="text-xl font-bold">{{ role.role }}</h3>
+              <BrutalBadge tone="mint">{{ role.period }}</BrutalBadge>
+            </div>
+
+            <p class="mt-3 text-sm leading-relaxed">{{ role.blurb }}</p>
+
+            <ul class="mt-4 flex flex-col gap-2">
+              <li v-for="bullet in role.bullets" :key="bullet" class="flex gap-3 text-sm leading-relaxed">
+                <span aria-hidden="true" class="mt-2 size-2 shrink-0 border-2 border-fg bg-hot-red"></span>
+                <span>{{ bullet }}</span>
+              </li>
+            </ul>
+          </BrutalCard>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Projects -->
+    <section id="projects" class="scroll-mt-24" aria-labelledby="projects-title">
+      <h2 id="projects-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Projects</h2>
+
+      <div class="mt-6 grid gap-6 md:grid-cols-2">
+        <BrutalCard
+          v-for="(project, index) in profile.projects"
+          :key="project.name"
+          :accent="projectAccents[index % 2]"
         >
-          <p class="border-b-[3px] border-current px-3 py-2 font-mono text-xs font-bold tracking-widest uppercase">
-            {{ color.name }}
-          </p>
-          <dl class="px-3 py-2 font-mono text-[11px] leading-relaxed">
-            <div class="flex justify-between gap-2">
-              <dt>Light</dt>
-              <dd>{{ color.light }}</dd>
-            </div>
-            <div class="flex justify-between gap-2">
-              <dt>Dark</dt>
-              <dd>{{ color.dark }}</dd>
-            </div>
-          </dl>
+          <template #header>{{ project.name }}</template>
+
+          <p class="text-sm leading-relaxed">{{ project.description }}</p>
+
+          <ul class="mt-4 flex flex-col gap-2">
+            <li v-for="bullet in project.bullets" :key="bullet" class="flex gap-3 text-sm leading-relaxed">
+              <span aria-hidden="true" class="mt-2 size-2 shrink-0 border-2 border-fg bg-vivid-yellow"></span>
+              <span>{{ bullet }}</span>
+            </li>
+          </ul>
+        </BrutalCard>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="scroll-mt-24" aria-labelledby="skills-title">
+      <h2 id="skills-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Skills</h2>
+
+      <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <BrutalCard v-for="(group, index) in profile.skills" :key="group.group" tone="surface">
+          <template #header>{{ group.group }}</template>
+
+          <ul class="flex flex-wrap gap-2">
+            <li v-for="item in group.items" :key="item">
+              <BrutalBadge :tone="skillTones[index % skillTones.length]">{{ item }}</BrutalBadge>
+            </li>
+          </ul>
+        </BrutalCard>
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section id="education" class="scroll-mt-24" aria-labelledby="education-title">
+      <h2 id="education-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Education</h2>
+
+      <BrutalCard accent="soft-violet" class="mt-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <h3 class="text-xl font-bold">{{ profile.education.school }}</h3>
+          <BrutalBadge tone="surface">{{ profile.education.period }}</BrutalBadge>
         </div>
-      </div>
+
+        <p class="mt-3 text-sm leading-relaxed">{{ profile.education.degree }}</p>
+        <p class="mt-1 font-mono text-xs tracking-widest uppercase">{{ profile.education.gpa }}</p>
+      </BrutalCard>
     </section>
 
-    <section class="flex flex-col gap-4" aria-labelledby="gallery-heading">
-      <h2 id="gallery-heading" class="font-mono text-xs font-bold tracking-[0.2em] uppercase">Primitives</h2>
+    <!-- Contact -->
+    <section id="contact" class="scroll-mt-24" aria-labelledby="contact-title">
+      <BrutalCard accent="hot-red" tone="muted">
+        <template #header>Contact</template>
 
-      <div class="grid gap-4 lg:grid-cols-2">
-        <BrutalCard accent="mint">
-          <template #header>Buttons</template>
+        <div class="flex flex-col gap-5">
+          <h2 id="contact-title" class="text-2xl font-bold tracking-tight sm:text-3xl">Let's build something solid.</h2>
 
           <div class="flex flex-wrap items-center gap-3">
-            <BrutalButton v-for="button in buttonVariants" :key="button.label" :variant="button.variant" size="sm">
-              {{ button.label }}
-            </BrutalButton>
+            <a :href="`mailto:${profile.email}`" :class="primaryLinkClasses">{{ profile.email }}</a>
+            <BrutalBadge tone="surface">{{ profile.location }}</BrutalBadge>
           </div>
-
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <BrutalButton disabled>Disabled</BrutalButton>
-            <BrutalButton variant="ghost" size="sm">Small</BrutalButton>
-          </div>
-        </BrutalCard>
-
-        <BrutalCard accent="vivid-yellow">
-          <template #header>Badges</template>
-
-          <div class="flex flex-wrap items-center gap-3">
-            <BrutalBadge
-              v-for="(tone, index) in badgeTones"
-              :key="tone"
-              :tone="tone"
-              :rotation="index % 2 === 0 ? -2 : 2"
-            >
-              {{ tone }}
-            </BrutalBadge>
-          </div>
-        </BrutalCard>
-      </div>
+        </div>
+      </BrutalCard>
     </section>
-
-    <section class="flex flex-col gap-4" aria-labelledby="structure-heading">
-      <h2 id="structure-heading" class="font-mono text-xs font-bold tracking-[0.2em] uppercase">Structure</h2>
-
-      <div class="grid gap-4 md:grid-cols-2">
-        <BrutalCard v-for="folder in folders" :key="folder.name" accent="hot-red">
-          <template #header>{{ folder.name }}</template>
-          <p class="text-sm leading-relaxed">{{ folder.detail }}</p>
-        </BrutalCard>
-      </div>
-    </section>
-
-    <RouterLink
-      to="/"
-      class="brutal-press inline-flex min-h-12 w-fit items-center justify-center border-[3px] border-fg bg-vivid-yellow px-6 font-mono text-sm font-bold tracking-widest text-black uppercase shadow-brutal-sm"
-    >
-      Back home
-    </RouterLink>
   </div>
 </template>
