@@ -22,6 +22,9 @@ type Config struct {
 	AppLocale      string `envconfig:"APP_LOCALE" default:"en"`
 	AppMaintenance bool   `envconfig:"APP_MAINTENANCE" default:"false"`
 	PublicDir      string `envconfig:"APP_PUBLIC_DIR" default:"./public"`
+	// AppCORSOrigins is a comma-separated allowlist of browser origins allowed
+	// to call the API cross-origin (the Vite dev server runs on another port).
+	AppCORSOrigins string `envconfig:"APP_CORS_ORIGINS" default:"http://localhost:5173"`
 
 	DBHost     string `envconfig:"DB_HOST" default:"localhost"`
 	DBPort     int    `envconfig:"DB_PORT" default:"5432"`

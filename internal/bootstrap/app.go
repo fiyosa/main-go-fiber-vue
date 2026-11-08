@@ -42,6 +42,7 @@ func Router(cfg *config.Config) *fiber.App {
 		ErrorHandler:  exceptions.Handler(cfg.IsDevelopment()),
 	})
 	app.Use(recover.New())
+	app.Use(platformmiddleware.CORS(cfg.AppCORSOrigins))
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
 	routes.RegisterMCP(app, cfg.MCPPath, newMCPHandler(cfg, nil))
@@ -91,6 +92,7 @@ func New(cfg *config.Config) (*Application, error) {
 		ErrorHandler:  exceptions.Handler(cfg.IsDevelopment()),
 	})
 	app.Use(recover.New())
+	app.Use(platformmiddleware.CORS(cfg.AppCORSOrigins))
 	app.Use(platformmiddleware.Locale(translator))
 	app.Use(platformmiddleware.Maintenance(cfg.AppMaintenance))
 
