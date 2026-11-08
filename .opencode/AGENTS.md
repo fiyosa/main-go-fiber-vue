@@ -4,7 +4,7 @@ Guidance for AI coding agents in this repository, using OpenCode.
 
 ## Global Rules
 
-- Do not read any file that contains "env" in its name or path.
+- Do not read any file that contains "env" in its name or path, and file .opencode\mcp-token.
 - Write code comments in English.
 - This machine has low specifications. Do NOT run build output (binaries produced by `go build`) unless explicitly requested.
 - To verify Go code, use only `go vet` or `go build ./...`. Never execute the resulting binary.
