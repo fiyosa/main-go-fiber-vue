@@ -1,11 +1,19 @@
 {
   "languages": {
     "JSON": {
-      "language_servers": ["json-language-server", "..."],
+      "language_servers": [
+        "!package-version-server",
+        "json-language-server",
+        "...",
+      ],
       "prettier": { "allowed": true, "tab_size": 2 },
     },
     "JSONC": {
-      "language_servers": ["json-language-server", "..."],
+      "language_servers": [
+        "!package-version-server",
+        "json-language-server",
+        "...",
+      ],
       "prettier": { "allowed": true, "tab_size": 2 },
     },
     "JavaScript": {
