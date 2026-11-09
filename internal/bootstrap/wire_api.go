@@ -15,7 +15,7 @@ import (
 // route layer contract. A nil database, nil sql handle, and nil token service
 // are all valid, so console commands can build the route table without a live
 // database.
-func wireAPI(db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService) v1.Dependencies {
+func wireAPI(db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService, secureCookies bool) v1.Dependencies {
 	loginRepo := auth.NewLoginRepository(
 		user.NewRepository(db),
 		auth.NewRepository(db),
@@ -28,7 +28,7 @@ func wireAPI(db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService) v1.Dependenci
 	}
 
 	return v1.Dependencies{
-		AuthController:   controllers.NewAuthController(loginRepo),
+		AuthController:   controllers.NewAuthController(loginRepo, secureCookies),
 		HealthController: controllers.NewHealthController(pinger),
 	}
 }

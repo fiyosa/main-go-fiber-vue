@@ -56,15 +56,12 @@ func ValidationError(c fiber.Ctx, fields map[string][]string) error {
 	})
 }
 
-// LoginSuccess builds a login response with a translated message.
-func LoginSuccess(c fiber.Ctx, token, refreshToken string, expiresIn int64) LoginResponse {
+// LoginSuccess builds a login response with a translated message. Tokens are
+// set as cookies by the controller and never included in the body.
+func LoginSuccess(c fiber.Ctx) LoginResponse {
 	return LoginResponse{
-		Success:      true,
-		Message:      translate(c, "lang.logged_in_successfully", nil),
-		Token:        token,
-		TokenType:    "Bearer",
-		ExpiresIn:    expiresIn,
-		RefreshToken: refreshToken,
+		Success: true,
+		Message: translate(c, "lang.logged_in_successfully", nil),
 	}
 }
 

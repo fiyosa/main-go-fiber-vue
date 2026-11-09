@@ -34,7 +34,7 @@ func CORS(origins string) fiber.Handler {
 			fiber.MethodOptions,
 		},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           600,
 	})
 }

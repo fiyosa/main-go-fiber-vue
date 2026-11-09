@@ -37,7 +37,7 @@ type Application struct {
 // such as `routes` can introspect the routing table from any working
 // directory and without a live database.
 func Router(cfg *config.Config) *fiber.App {
-	deps := wireAPI(nil, nil, nil)
+	deps := wireAPI(nil, nil, nil, !cfg.IsDevelopment())
 
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
@@ -85,7 +85,7 @@ func New(cfg *config.Config) (*Application, error) {
 		return nil, fmt.Errorf("init token service: %w", err)
 	}
 
-	deps := wireAPI(db, sqlDB, tokens)
+	deps := wireAPI(db, sqlDB, tokens, !cfg.IsDevelopment())
 
 	mcpHandler := newMCPHandler(cfg, sqlDB)
 

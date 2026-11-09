@@ -46,6 +46,8 @@ export const throwAxios = (error: unknown): never => {
 export const instance: AxiosInstance = axios.create({
   baseURL: secret.API_URL,
   timeout: 30_000,
+  // Credentials travel in HTTP-only cookies, so every request must include them.
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
   },

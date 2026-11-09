@@ -17,9 +17,8 @@
   ],
   "compaction": {
     "auto": true,
-    "keep": { "tokens": 15000 },
-    "buffer": 58000, // vscode 9router
-    // "buffer": 130000, // deepseek opencode
+    "keep": { "tokens": 20000 },
+    "buffer": 4000,
   },
   "mcp": {
     "servers": {
@@ -36,7 +35,7 @@
       },
       "app-db": {
         "type": "remote",
-        "url": "https://v1.fiyosa.my.id/api/mcp",
+        "url": "{file:mcp-url}",
         "oauth": false,
         "headers": {
           "Authorization": "Bearer {file:mcp-token}",

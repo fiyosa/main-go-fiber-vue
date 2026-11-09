@@ -47,5 +47,9 @@
       ],
       "prettier": { "allowed": true },
     },
+    "Go": {
+      "language_servers": ["gopls", "..."],
+      "prettier": { "allowed": true },
+    },
   },
 }

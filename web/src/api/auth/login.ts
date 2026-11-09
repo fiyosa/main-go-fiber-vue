@@ -5,18 +5,15 @@ export interface LoginRequest {
   password: string
 }
 
-// LoginResponse mirrors response.LoginResponse from the Go API.
+// LoginResponse mirrors response.LoginResponse from the Go API. The access and
+// refresh tokens are delivered as HTTP-only cookies, never in this body.
 export interface LoginResponse {
   success: boolean
   message: string
-  token: string
-  token_type: string
-  expires_in: number
-  refresh_token: string
 }
 
-/// POST {API_URL}/api/v1/auth/login. The caller is responsible for persisting
-/// the token returned by a successful call.
+/// POST {API_URL}/api/v1/auth/login. The browser stores the issued cookies
+/// automatically; no token handling is needed by the caller.
 export const login = async (payload: LoginRequest): Promise<LoginResponse> =>
   await axiosLib.instance
     .post<LoginResponse>('/api/v1/auth/login', payload)

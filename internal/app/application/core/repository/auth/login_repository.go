@@ -5,11 +5,41 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
+
 	"go-fiber-vue/internal/app/application/core/repository/user"
 	"go-fiber-vue/internal/app/domain/core/entity"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
 	platformauth "go-fiber-vue/internal/platform/auth"
 )
+
+// Auth cookie names.
+const (
+	AccessCookieName  = "access_token"
+	RefreshCookieName = "refresh_token"
+)
+
+// SetAuthCookies stores the issued access and refresh tokens in HTTP-only
+// cookies. Cookies are not readable by JavaScript and never appear in the
+// response body.
+func SetAuthCookies(fctx fiber.Ctx, accessToken, refreshToken string, accessTTL, refreshTTL time.Duration, secure bool) {
+	fctx.Cookie(&fiber.Cookie{
+		Name:     AccessCookieName,
+		Value:    accessToken,
+		MaxAge:   int(accessTTL.Seconds()),
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+	fctx.Cookie(&fiber.Cookie{
+		Name:     RefreshCookieName,
+		Value:    refreshToken,
+		MaxAge:   int(refreshTTL.Seconds()),
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+}
 
 // TokenService defines the JWT operations required by the login repository.
 // It is injected by the bootstrap so the repository stays decoupled from auth/platform.
@@ -26,11 +56,14 @@ type Meta struct {
 	UserAgent string
 }
 
-// LoginResult is returned on a successful login.
+// LoginResult is returned on a successful login. The TTLs are exposed so the
+// presentation layer can size the auth cookies without importing the token
+// service.
 type LoginResult struct {
-	Token        string
-	RefreshToken string
-	ExpiresIn    int64
+	Token            string
+	RefreshToken     string
+	ExpiresIn        int64
+	RefreshExpiresIn int64
 }
 
 // LoginRepository is the single interface for the POST /api/v1/auth/login
@@ -102,8 +135,9 @@ func (r *gormLoginRepository) Login(ctx context.Context, email, password string,
 	}
 
 	return &LoginResult{
-		Token:        accessToken,
-		RefreshToken: refreshRaw,
-		ExpiresIn:    int64(r.tokens.AccessTTL().Seconds()),
+		Token:            accessToken,
+		RefreshToken:     refreshRaw,
+		ExpiresIn:        int64(r.tokens.AccessTTL().Seconds()),
+		RefreshExpiresIn: int64(r.tokens.RefreshTTL().Seconds()),
 	}, nil
 }
