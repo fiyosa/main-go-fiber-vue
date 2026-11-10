@@ -17,6 +17,7 @@ podman run -itd \
   --name main-app \
   --restart always \
   -p 8080:8080 \
+  -v ".env:/app/.env:ro,Z" \
   # --env-file .env \
   main-app
 
