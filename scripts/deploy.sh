@@ -17,7 +17,7 @@ podman run -itd \
   --name main-app \
   --restart always \
   -p 8080:8080 \
-  --env-file .env \
+  # --env-file .env \
   main-app
 
 podman image prune -f

@@ -9,6 +9,9 @@ COPY app .
 COPY lang/ ./lang/
 COPY public/ ./public/
 
+# copy file .env "scripts/deploy.sh:20"
+COPY .env .
+
 EXPOSE 8080
 
 CMD ["./app"]
