@@ -17,8 +17,8 @@ import (
 	"go-fiber-vue/internal/config"
 	"go-fiber-vue/internal/platform/auth"
 	"go-fiber-vue/internal/platform/database"
-	platformmiddleware "go-fiber-vue/internal/platform/http/middleware"
 	"go-fiber-vue/internal/platform/lang"
+	platformmiddleware "go-fiber-vue/internal/platform/middleware"
 	"go-fiber-vue/internal/routes"
 )
 
@@ -50,6 +50,7 @@ func Router(cfg *config.Config) *fiber.App {
 
 	routes.RegisterMCP(app, cfg.MCPPath, newMCPHandler(cfg, nil))
 	routes.RegisterAPI(app, deps)
+	routes.RegisterDocs(app, cfg.PublicDir)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return app
@@ -101,6 +102,7 @@ func New(cfg *config.Config) (*Application, error) {
 
 	routes.RegisterMCP(app, cfg.MCPPath, mcpHandler)
 	routes.RegisterAPI(app, deps)
+	routes.RegisterDocs(app, cfg.PublicDir)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return &Application{

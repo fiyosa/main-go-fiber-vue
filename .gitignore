@@ -21,8 +21,9 @@ Thumbs.db
 /logs/
 .codegraph
 public/build
+public/docs/openapi.json
 tmp/
-docs/
+/docs/
 
 # Test files
 *_test.*

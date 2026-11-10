@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <title>API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script src="/docs/scalar.js"></script>
+
+    <script>
+      const token = document.cookie
+        ?.split("; ")
+        ?.find((row) => row.startsWith("access_token="))
+        ?.split("=")
+        ?.at(1);
+
+      Scalar.createApiReference("#app", {
+        url: "/api/docs/openapi.json",
+        agent: { disabled: true },
+        showToolbar: false,
+        layout: "modern",
+        theme: "alternate",
+        ...(token ? { authentication: { token } } : {}),
+        showDeveloperTools: "never", // 'always' | 'localhost' | 'never'
+      });
+    </script>
+
+    <script>
+      const hiddenLabels = ["Open API Client"];
+      function hideActionButtons() {
+        document.querySelectorAll("button, a").forEach((el) => {
+          const text = el.textContent.trim();
+          if (hiddenLabels.some((label) => text.includes(label))) {
+            el.style.setProperty("display", "none", "important");
+          }
+        });
+      }
+      hideActionButtons();
+      new MutationObserver(hideActionButtons).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    </script>
+  </body>
+</html>
