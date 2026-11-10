@@ -1,0 +1,17 @@
+{
+  "info": {
+    "title": "Route API",
+    "version": "0.1.0",
+    "description": "API Reference for endpoints"
+  },
+  "servers": [
+    {
+      "url": "https://v1.fiyosa.my.id",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Development server"
+    }
+  ]
+}

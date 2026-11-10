@@ -4,6 +4,7 @@
     <title>API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
     <div id="app"></div>
@@ -20,11 +21,31 @@
       Scalar.createApiReference("#app", {
         url: "/api/docs/openapi.json",
         agent: { disabled: true },
+        documentDownloadType: "none",
+        hideModels: true,
         showToolbar: false,
         layout: "modern",
         theme: "alternate",
         ...(token ? { authentication: { token } } : {}),
         showDeveloperTools: "never", // 'always' | 'localhost' | 'never'
+      });
+    </script>
+
+    <script>
+      function replacePoweredBy() {
+        document
+          .querySelectorAll('a[href*="utm_source=powered-by"]')
+          .forEach((el) => {
+            const span = document.createElement("span");
+            span.textContent = "Portfolio";
+            span.className = el.className;
+            el.replaceWith(span);
+          });
+      }
+      replacePoweredBy();
+      new MutationObserver(replacePoweredBy).observe(document.body, {
+        childList: true,
+        subtree: true,
       });
     </script>
 

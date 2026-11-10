@@ -22,7 +22,7 @@ func Root() *cobra.Command {
 	}
 	root.SetVersionTemplate(fmt.Sprintf("%s %s\n", consoleName, consoleVersion))
 	root.SetHelpFunc(renderHelp)
-	root.AddCommand(Migrate(), DB(), Routes())
+	root.AddCommand(Migrate(), DB(), Routes(), OpenAPI())
 	return root
 }
 
