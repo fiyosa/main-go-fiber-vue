@@ -14,7 +14,6 @@
   const links = [
     { name: 'tech', to: '/tech', label: 'Tech' },
     ...(showServer ? [{ name: 'server', to: '/server', label: 'Server' }] : []),
-    { name: 'about', to: '/about', label: 'About' },
   ] as const
 
   // Base shape only; the background swaps so the active route is an inverted
