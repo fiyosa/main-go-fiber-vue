@@ -19,6 +19,20 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./guest/About.vue'),
       },
       {
+        path: 'tech',
+        name: 'tech',
+        component: () => import('./guest/Tech.vue'),
+      },
+      ...(import.meta.env.VITE_SHOW_SERVER === 'true'
+        ? [
+            {
+              path: 'server',
+              name: 'server',
+              component: () => import('./guest/Server.vue'),
+            },
+          ]
+        : []),
+      {
         path: ':pathMatch(.*)*',
         name: 'not-found',
         component: () => import('./guest/404.vue'),

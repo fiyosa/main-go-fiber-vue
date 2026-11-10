@@ -9,7 +9,13 @@
 
   // The brand block on the left is the Home link, so the nav only holds the
   // remaining pages.
-  const links = [{ name: 'about', to: '/about', label: 'About' }] as const
+  const showServer = import.meta.env.VITE_SHOW_SERVER === 'true'
+
+  const links = [
+    { name: 'tech', to: '/tech', label: 'Tech' },
+    ...(showServer ? [{ name: 'server', to: '/server', label: 'Server' }] : []),
+    { name: 'about', to: '/about', label: 'About' },
+  ] as const
 
   // Base shape only; the background swaps so the active route is an inverted
   // block instead of a color-only hint.

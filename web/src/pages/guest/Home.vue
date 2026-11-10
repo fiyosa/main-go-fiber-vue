@@ -4,8 +4,6 @@
       <span class="bg-vivid-yellow px-3 text-black">Welcome</span>
     </h1>
 
-    <p class="max-w-md text-base leading-relaxed">
-      Use the navigation above to explore the app.
-    </p>
+    <p class="max-w-md text-base leading-relaxed">Use the navigation above to explore the app.</p>
   </section>
 </template>
