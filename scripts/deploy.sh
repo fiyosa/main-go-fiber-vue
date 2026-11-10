@@ -10,6 +10,11 @@ go run ./cmd/console openapi
 
 podman build -t main-app -f Dockerfile .
 
+if [ ! -f .env ]; then
+  echo "Missing .env in $(pwd); refusing to run because podman would create a directory instead." >&2
+  exit 1
+fi
+
 podman stop main-app 2>/dev/null || true
 podman rm main-app 2>/dev/null || true
 
@@ -17,8 +22,7 @@ podman run -itd \
   --name main-app \
   --restart always \
   -p 8080:8080 \
-  -v ".env:/app/.env:ro,Z" \
-  # --env-file .env \
+  -v "$PWD/.env:/app/.env:ro,Z" \
   main-app
 
 podman image prune -f
