@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -12,6 +13,7 @@ import (
 // Repository persists auth sessions.
 type Repository interface {
 	CreateSession(ctx context.Context, session *entity.Auth) error
+	RevokeSession(ctx context.Context, token string) error
 }
 
 type gormRepository struct {
@@ -28,5 +30,16 @@ func NewRepository(db *gorm.DB) Repository {
 
 func (r *gormRepository) CreateSession(ctx context.Context, session *entity.Auth) error {
 	err := r.db.WithContext(ctx).Create(session).Error
+	return exceptions.FromDB(err)
+}
+
+// RevokeSession marks the session matching the given access token as revoked.
+// A token that does not match any session is a no-op, so logout stays idempotent.
+func (r *gormRepository) RevokeSession(ctx context.Context, token string) error {
+	now := time.Now().UTC()
+	err := r.db.WithContext(ctx).
+		Model(&entity.Auth{}).
+		Where("token = ? AND revoked_at IS NULL", token).
+		Update("revoked_at", now).Error
 	return exceptions.FromDB(err)
 }

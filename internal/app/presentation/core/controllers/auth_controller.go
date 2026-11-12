@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -16,16 +17,17 @@ import (
 // AuthController handles /api/v1/auth/* endpoints.
 // All imports stay within: repository, request, response.
 type AuthController struct {
-	login auth.LoginRepository
+	login  auth.LoginRepository
+	logout auth.LogoutRepository
 	// secure marks auth cookies Secure; it is disabled in development so the
 	// cookies work over plain HTTP on localhost.
 	secure bool
 }
 
-// NewAuthController wires the login repository (auth.LoginRepository) and the
-// cookie security policy resolved by the bootstrap.
-func NewAuthController(login auth.LoginRepository, secure bool) *AuthController {
-	return &AuthController{login: login, secure: secure}
+// NewAuthController wires the login and logout repositories (auth.LoginRepository,
+// auth.LogoutRepository) and the cookie security policy resolved by the bootstrap.
+func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, secure bool) *AuthController {
+	return &AuthController{login: login, logout: logout, secure: secure}
 }
 
 // Login handles POST /api/v1/auth/login.
@@ -75,4 +77,18 @@ func (c *AuthController) Me(fctx fiber.Ctx) error {
 		ID:    userID,
 		Email: email,
 	}, "lang.retrieved", map[string]string{"operator": operator}, fiber.StatusOK)
+}
+
+// Logout handles POST /api/v1/auth/logout.
+func (c *AuthController) Logout(fctx fiber.Ctx) error {
+	token := middleware.AccessToken(fctx)
+	auth.ClearAuthCookies(fctx, c.secure)
+
+	if c.logout != nil {
+		if err := c.logout.Logout(fctx.Context(), token); err != nil {
+			slog.Warn("logout: session revoke failed", "error", err)
+		}
+	}
+
+	return response.Success(fctx, nil, "lang.logged_out_successfully", nil, fiber.StatusOK)
 }

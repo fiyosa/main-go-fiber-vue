@@ -75,7 +75,7 @@ func Permission(tokens TokenValidator, authorizer Authorizer) func(string) fiber
 // authenticate validates the access token from the cookie (preferred) or the
 // Authorization bearer header and stores the caller in locals.
 func authenticate(c fiber.Ctx, tokens TokenValidator) (uint64, error) {
-	raw := accessToken(c)
+	raw := AccessToken(c)
 	if raw == "" {
 		return 0, exceptions.Unauthorized("auth.unauthenticated", nil)
 	}
@@ -95,7 +95,8 @@ func authenticate(c fiber.Ctx, tokens TokenValidator) (uint64, error) {
 	return userID, nil
 }
 
-func accessToken(c fiber.Ctx) string {
+// AccessToken extracts the access token string from the cookie or Authorization header.
+func AccessToken(c fiber.Ctx) string {
 	if token := strings.TrimSpace(c.Cookies(auth.AccessCookieName)); token != "" {
 		return token
 	}

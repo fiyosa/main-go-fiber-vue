@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted, computed } from 'vue'
-  import { RouterLink } from 'vue-router'
+  import { RouterLink, useRouter } from 'vue-router'
   import { useUIStore } from '../../../store/ui'
+  import { logout } from '../../../api/auth'
 
   defineProps<{
     sidebarOpen?: boolean
@@ -13,9 +14,19 @@
 
   const ui = useUIStore()
   const isDark = computed(() => ui.theme === 'dark')
+  const router = useRouter()
 
   const toggleTheme = () => {
     ui.toggleTheme()
+  }
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      dropdownOpen.value = false
+      router.push('/login')
+    }
   }
 
   const dropdownOpen = ref(false)
@@ -39,12 +50,13 @@
     <div class="flex items-center gap-3">
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-xs font-semibold text-[var(--admin-fg)] shadow-xs transition-colors hover:bg-[var(--admin-border)]/50"
+        class="inline-flex size-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] text-[var(--admin-muted)] shadow-xs transition-colors hover:text-[var(--admin-fg)] hover:bg-[var(--admin-border)]/50"
         :aria-label="sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'"
+        :title="sidebarOpen ? 'Hide Menu' : 'Show Menu'"
         @click="$emit('toggleSidebar')"
       >
         <svg
-          class="size-4.5 text-[var(--admin-muted)]"
+          class="size-4.5"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -52,7 +64,6 @@
         >
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
-        <span>{{ sidebarOpen ? 'Hide Menu' : 'Show Menu' }}</span>
       </button>
 
       <div class="hidden items-center gap-2 text-sm font-medium sm:flex">
@@ -159,16 +170,16 @@
             </svg>
             <span>Go to Root (/)</span>
           </RouterLink>
-          <RouterLink
-            to="/"
-            class="flex items-center gap-2 px-3 py-2 text-rose-500 hover:bg-rose-500/10 transition-colors"
-            @click="dropdownOpen = false"
+          <button
+            type="button"
+            class="flex w-full items-center gap-2 px-3 py-2 text-left text-rose-500 hover:bg-rose-500/10 transition-colors"
+            @click="handleLogout"
           >
             <svg class="size-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             <span>Logout</span>
-          </RouterLink>
+          </button>
         </div>
       </div>
     </div>

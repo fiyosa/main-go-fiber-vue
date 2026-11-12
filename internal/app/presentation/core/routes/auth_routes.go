@@ -11,5 +11,6 @@ import (
 func RegisterAuthRoutes(group fiber.Router, controller *controllers.AuthController, tokens middleware.TokenValidator) {
 	auth := group.Group("/auth")
 	auth.Post("/login", controller.Login)
+	auth.Post("/logout", controller.Logout)
 	auth.Get("/me", middleware.Authenticate(tokens), controller.Me)
 }

@@ -27,6 +27,7 @@ func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenSe
 		auth.NewRepository(db),
 		tokens,
 	)
+	logoutRepo := auth.NewLogoutRepository(auth.NewRepository(db))
 
 	var pinger controllers.Pinger
 	if sqlDB != nil {
@@ -36,7 +37,7 @@ func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenSe
 	roleRepo := role.NewRepository(db)
 
 	return v1.Dependencies{
-		AuthController:   controllers.NewAuthController(loginRepo, !cfg.IsDevelopment()),
+		AuthController:   controllers.NewAuthController(loginRepo, logoutRepo, !cfg.IsDevelopment()),
 		HealthController: controllers.NewHealthController(pinger),
 		RoleController:   controllers.NewRoleController(roleRepo, newHashidEncoder(cfg)),
 		Tokens:           validator,

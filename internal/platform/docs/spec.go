@@ -189,6 +189,24 @@ func defaultOperation(path, method string) map[string]any {
 			},
 		}
 	}
+	if path == "/api/v1/auth/logout" && method == "post" {
+		return map[string]any{
+			"tags":        []any{"Auth"},
+			"summary":     "Logout",
+			"description": "Revokes the current session and clears the HTTP-only `access_token` and `refresh_token` cookies.",
+			"responses": map[string]any{
+				"200": map[string]any{
+					"description": "Logout successful. Auth cookies cleared.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema":  map[string]any{"$ref": "#/components/schemas/LoginResponse"},
+							"example": map[string]any{"success": true, "message": "Logged out successfully"},
+						},
+					},
+				},
+			},
+		}
+	}
 	if (path == "/api/v1/healthz" || path == "/api/v1/readyz") && method == "get" {
 		tag := "Health"
 		summary := "Liveness probe"

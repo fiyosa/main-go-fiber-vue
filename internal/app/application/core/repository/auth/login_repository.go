@@ -41,6 +41,26 @@ func SetAuthCookies(fctx fiber.Ctx, accessToken, refreshToken string, accessTTL,
 	})
 }
 
+// ClearAuthCookies clears both auth cookies by setting MaxAge to -1.
+func ClearAuthCookies(fctx fiber.Ctx, secure bool) {
+	fctx.Cookie(&fiber.Cookie{
+		Name:     AccessCookieName,
+		Value:    "",
+		MaxAge:   -1,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+	fctx.Cookie(&fiber.Cookie{
+		Name:     RefreshCookieName,
+		Value:    "",
+		MaxAge:   -1,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+}
+
 // TokenService defines the JWT operations required by the login repository.
 // It is injected by the bootstrap so the repository stays decoupled from auth/platform.
 type TokenService interface {

@@ -24,7 +24,7 @@
 
     <span
       v-if="badge !== undefined"
-      class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-semibold text-blue-400"
+      class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--admin-sidebar-active-fg)]"
       :class="collapsed ? 'lg:hidden' : ''"
     >
       {{ badge }}

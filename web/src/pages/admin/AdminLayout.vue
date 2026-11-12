@@ -18,7 +18,7 @@
 </script>
 
 <template>
-  <div class="admin-theme flex min-h-screen bg-[var(--admin-bg)] text-[var(--admin-fg)] antialiased">
+  <div class="admin-theme flex min-h-dvh bg-[var(--admin-bg)] text-[var(--admin-fg)] antialiased">
     <!-- Sidebar -->
     <AdminSidebar :is-open="sidebarOpen" @close="closeSidebar" />
 

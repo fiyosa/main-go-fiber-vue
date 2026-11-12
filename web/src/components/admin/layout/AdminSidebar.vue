@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { RouterLink } from 'vue-router'
   import AdminNavItem from '../ui/AdminNavItem.vue'
+  import AdminNavGroup from '../ui/AdminNavGroup.vue'
 
   defineProps<{
     isOpen?: boolean
@@ -21,7 +22,7 @@
 
   <!-- Sidebar Container -->
   <aside
-    class="group fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] transition-all duration-300 lg:static lg:h-screen"
+    class="group fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start"
     :class="[
       isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20',
       { 'collapsed': !isOpen }
@@ -29,7 +30,7 @@
   >
     <!-- Brand Header -->
     <div
-      class="flex h-16 shrink-0 items-center border-b border-slate-800/80 px-4 lg:px-6"
+      class="flex h-16 shrink-0 items-center border-b border-[var(--admin-border)] px-4 lg:px-6"
       :class="isOpen ? 'justify-between' : 'lg:justify-center'"
     >
       <RouterLink to="/admin" class="flex items-center gap-3">
@@ -44,14 +45,14 @@
           </svg>
         </div>
         <div class="flex flex-col whitespace-nowrap lg:group-[.collapsed]:hidden">
-          <span class="text-sm font-bold tracking-tight text-white">Admin Control</span>
-          <span class="text-[10px] font-medium text-slate-400">Enterprise Suite</span>
+          <span class="text-sm font-bold tracking-tight text-[var(--admin-fg)]">Admin Control</span>
+          <span class="text-[10px] font-medium text-[var(--admin-muted)]">Enterprise Suite</span>
         </div>
       </RouterLink>
 
       <button
         type="button"
-        class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+        class="rounded-lg p-1.5 text-[var(--admin-muted)] hover:bg-[var(--admin-border)]/50 hover:text-[var(--admin-fg)] lg:hidden"
         @click="$emit('close')"
       >
         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -61,11 +62,11 @@
     </div>
 
     <!-- Navigation List -->
-    <div class="flex-1 overflow-y-auto px-3 py-6 lg:px-4 whitespace-nowrap">
+    <div class="flex-1 overflow-y-auto px-3 py-6 lg:px-4 whitespace-nowrap lg:group-[.collapsed]:overflow-visible">
       <div class="space-y-6">
         <!-- Main Section -->
         <div>
-          <p class="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase lg:group-[.collapsed]:hidden">
+          <p class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden">
             Overview
           </p>
           <div class="mt-2 space-y-1">
@@ -85,7 +86,7 @@
 
         <!-- Management Section -->
         <div>
-          <p class="px-3 text-[11px] font-semibold tracking-wider text-slate-500 uppercase lg:group-[.collapsed]:hidden">
+          <p class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden">
             Management
           </p>
           <div class="mt-2 space-y-1">
@@ -101,7 +102,15 @@
               </template>
             </AdminNavItem>
 
-            <AdminNavItem to="/admin" label="System Users" :collapsed="!isOpen">
+            <AdminNavGroup
+              label="System Users"
+              :items="[
+                { key: 'users', label: 'Users', to: { name: 'admin', query: { tab: 'users' } } },
+                { key: 'roles', label: 'Roles', to: { name: 'admin', query: { tab: 'roles' } } },
+                { key: 'permissions', label: 'Permissions', to: { name: 'admin', query: { tab: 'permissions' } } },
+              ]"
+              :collapsed="!isOpen"
+            >
               <template #icon>
                 <svg class="size-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path
@@ -111,24 +120,24 @@
                   />
                 </svg>
               </template>
-            </AdminNavItem>
+            </AdminNavGroup>
           </div>
         </div>
       </div>
     </div>
 
     <!-- User Profile Footer -->
-    <div class="shrink-0 border-t border-slate-800/80 p-3 lg:p-4">
+    <div class="shrink-0 border-t border-[var(--admin-border)] p-3 lg:p-4">
       <div
-        class="flex items-center gap-3 rounded-xl bg-slate-800/50 p-2.5 whitespace-nowrap"
+        class="flex items-center gap-3 rounded-xl bg-[var(--admin-border)]/30 p-2.5 whitespace-nowrap"
         :class="!isOpen ? 'lg:justify-center' : ''"
       >
         <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
           AD
         </div>
         <div class="flex flex-1 flex-col truncate lg:group-[.collapsed]:hidden">
-          <span class="truncate text-xs font-semibold text-white">Administrator</span>
-          <span class="truncate text-[10px] text-slate-400">admin@system.local</span>
+          <span class="truncate text-xs font-semibold text-[var(--admin-fg)]">Administrator</span>
+          <span class="truncate text-[10px] text-[var(--admin-muted)]">admin@system.local</span>
         </div>
       </div>
     </div>
