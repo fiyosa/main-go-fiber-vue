@@ -39,6 +39,12 @@ type Config struct {
 	JWTAccessTTL  time.Duration `envconfig:"JWT_ACCESS_TTL" default:"3h"`
 	JWTRefreshTTL time.Duration `envconfig:"JWT_REFRESH_TTL" default:"720h"`
 
+	// Hashid* configure how numeric primary keys are encoded in API payloads.
+	// Rotating HASHID_SALT invalidates every id handed out before, so it must be
+	// set once and kept. Production must set it explicitly.
+	HashidSalt      string `envconfig:"HASHID_SALT"`
+	HashidMinLength int    `envconfig:"HASHID_MIN_LENGTH" default:"8"`
+
 	// Storage* configure the S3-compatible object store (Garage in development).
 	// The storage layer stays disabled unless endpoint, bucket and both
 	// credentials are set, so a missing object store never blocks startup.
@@ -63,6 +69,11 @@ type Config struct {
 	MCPSQLMaxRows int `envconfig:"MCP_SQL_MAX_ROWS" default:"1000"`
 	// MCPSQLTimeout bounds how long one run_sql statement may run.
 	MCPSQLTimeout time.Duration `envconfig:"MCP_SQL_TIMEOUT" default:"30s"`
+
+	// BasicAuth* configure HTTP Basic authentication used to protect internal
+	// endpoints such as the API reference UI.
+	BasicAuthUsername string `envconfig:"BASIC_AUTH_USERNAME"`
+	BasicAuthPassword string `envconfig:"BASIC_AUTH_PASSWORD"`
 }
 
 func Load() (*Config, error) {
@@ -80,6 +91,9 @@ func Load() (*Config, error) {
 	}
 	cfg.MCPPath = normalizePath(cfg.MCPPath)
 	if err := cfg.validateMCP(); err != nil {
+		return nil, err
+	}
+	if err := cfg.validateHashid(); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -107,6 +121,27 @@ func (c *Config) validateMCP() error {
 		return errors.New("MCP_TOKEN is required when MCP_ENABLED=true")
 	}
 	return nil
+}
+
+// validateHashid makes the id salt mandatory in production. Without it every
+// hashid would be predictable, so failing fast is safer than warning.
+func (c *Config) validateHashid() error {
+	if c.IsDevelopment() {
+		return nil
+	}
+	if strings.TrimSpace(c.HashidSalt) == "" {
+		return errors.New("HASHID_SALT is required outside development")
+	}
+	return nil
+}
+
+// HashidSaltOrDefault returns the salt used to encode ids. Development falls
+// back to a fixed local salt so a fresh checkout runs without extra setup.
+func (c *Config) HashidSaltOrDefault() string {
+	if salt := strings.TrimSpace(c.HashidSalt); salt != "" {
+		return salt
+	}
+	return "dev-only-hashid-salt"
 }
 
 // MCPTokenHash returns the SHA-256 sum of the configured bearer token. Callers

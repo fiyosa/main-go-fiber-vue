@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -77,8 +76,4 @@ func (s *sqlLogger) Trace(ctx context.Context, begin time.Time, fc func() (strin
 	if sql != "" {
 		logs.LogDB(sql)
 	}
-}
-
-func SQLDB(db *gorm.DB) (*sql.DB, error) {
-	return db.DB()
 }

@@ -2,8 +2,21 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 import GuestLayout from './guest/GuestLayout.vue'
+import { authGuard } from './authGuard'
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/admin',
+    component: () => import('./admin/AdminLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'admin',
+        component: () => import('./admin/AdminHome.vue'),
+      },
+    ],
+  },
   {
     path: '/',
     component: GuestLayout,
@@ -17,6 +30,11 @@ const routes: RouteRecordRaw[] = [
         path: 'tech',
         name: 'tech',
         component: () => import('./guest/Tech.vue'),
+      },
+      {
+        path: 'login',
+        name: 'login',
+        component: () => import('./guest/Login.vue'),
       },
       ...(import.meta.env.VITE_SHOW_SERVER === 'true'
         ? [
@@ -41,5 +59,7 @@ const router = createRouter({
   routes,
   scrollBehavior: () => ({ top: 0 }),
 })
+
+router.beforeEach(authGuard)
 
 export default router

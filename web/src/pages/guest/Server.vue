@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import { BrutalBadge, BrutalCard } from './components/ui'
-  import { serverContent } from './content/server'
+  import { BrutalBadge, BrutalCard } from '../../components/guest/ui'
+  import { serverContent } from '../../content/server'
 
   const secondaryLinkClasses =
     'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-surface px-6 font-mono text-sm font-bold tracking-widest text-fg uppercase shadow-brutal-sm'

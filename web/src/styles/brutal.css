@@ -1,7 +1,7 @@
 /* Neo-Brutalism style module. Everything here is scoped to `.guest-brutal`
-   so nothing outside `pages/guest` can resolve the brutal tokens. */
+   so nothing outside the guest pages can resolve the brutal tokens. */
 
-/* Self-hosted fonts. Files live in pages/guest/assets/fonts so the app never
+/* Self-hosted fonts. Files live in assets/fonts so the app never
    makes a network request for typography. Space Grotesk ships as one variable
    file. */
 @font-face {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import { BrutalBadge, BrutalCard } from './components/ui'
-  import { profile } from './content/profile'
+  import { BrutalBadge, BrutalCard } from '../../components/guest/ui'
+  import { profile } from '../../content/profile'
 
   // Anchors share the BrutalButton shape without nesting a button inside a link.
   // The contact anchor must not uppercase, so the email stays lowercase.

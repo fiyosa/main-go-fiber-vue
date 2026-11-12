@@ -37,7 +37,7 @@ type Application struct {
 // such as `routes` can introspect the routing table from any working
 // directory and without a live database.
 func Router(cfg *config.Config) *fiber.App {
-	deps := wireAPI(nil, nil, nil, !cfg.IsDevelopment())
+	deps := wireAPI(cfg, nil, nil, nil, nil)
 
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
@@ -50,7 +50,7 @@ func Router(cfg *config.Config) *fiber.App {
 
 	routes.RegisterMCP(app, cfg.MCPPath, newMCPHandler(cfg, nil))
 	routes.RegisterAPI(app, deps)
-	routes.RegisterDocs(app, cfg.PublicDir)
+	routes.RegisterDocs(app, cfg.PublicDir, cfg.BasicAuthUsername, cfg.BasicAuthPassword)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return app
@@ -86,7 +86,7 @@ func New(cfg *config.Config) (*Application, error) {
 		return nil, fmt.Errorf("init token service: %w", err)
 	}
 
-	deps := wireAPI(db, sqlDB, tokens, !cfg.IsDevelopment())
+	deps := wireAPI(cfg, db, sqlDB, tokens, tokens)
 
 	mcpHandler := newMCPHandler(cfg, sqlDB)
 
@@ -102,7 +102,7 @@ func New(cfg *config.Config) (*Application, error) {
 
 	routes.RegisterMCP(app, cfg.MCPPath, mcpHandler)
 	routes.RegisterAPI(app, deps)
-	routes.RegisterDocs(app, cfg.PublicDir)
+	routes.RegisterDocs(app, cfg.PublicDir, cfg.BasicAuthUsername, cfg.BasicAuthPassword)
 	routes.RegisterWeb(app, cfg.PublicDir)
 
 	return &Application{

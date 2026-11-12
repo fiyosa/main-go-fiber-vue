@@ -39,6 +39,6 @@ func SpecHandler(c fiber.Ctx) error {
 		return fiber.ErrNotFound
 	}
 	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-	c.Set(fiber.HeaderCacheControl, "public, max-age=3600")
+	c.Set(fiber.HeaderCacheControl, "private, max-age=3600")
 	return c.Send(body)
 }

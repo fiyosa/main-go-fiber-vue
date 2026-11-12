@@ -32,7 +32,7 @@ func DB() *cobra.Command {
 		Use:   "db",
 		Short: "Database maintenance",
 	}
-	cmd.AddCommand(Seed())
+	cmd.AddCommand(Seed(), UserCreate())
 	return cmd
 }
 

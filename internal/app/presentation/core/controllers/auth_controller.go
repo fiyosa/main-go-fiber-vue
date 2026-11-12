@@ -6,8 +6,11 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"go-fiber-vue/internal/app/application/core/repository/auth"
+	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
+	"go-fiber-vue/internal/app/presentation/core/middleware"
 	"go-fiber-vue/internal/app/presentation/core/request"
 	"go-fiber-vue/internal/app/presentation/core/response"
+	"go-fiber-vue/internal/platform/lang"
 )
 
 // AuthController handles /api/v1/auth/* endpoints.
@@ -52,4 +55,24 @@ func (c *AuthController) Login(fctx fiber.Ctx) error {
 	)
 
 	return fctx.Status(fiber.StatusOK).JSON(response.LoginSuccess(fctx))
+}
+
+// Me handles GET /api/v1/auth/me.
+func (c *AuthController) Me(fctx fiber.Ctx) error {
+	userID, ok := middleware.UserID(fctx)
+	if !ok {
+		return exceptions.Unauthorized("auth.unauthenticated", nil)
+	}
+
+	email, _ := fctx.Locals(middleware.LocalEmail).(string)
+
+	operator := "Profile"
+	if translator := lang.From(fctx); translator != nil {
+		operator = translator.T(lang.Locale(fctx), "lang.profile", nil)
+	}
+
+	return response.Success(fctx, response.MeResource{
+		ID:    userID,
+		Email: email,
+	}, "lang.retrieved", map[string]string{"operator": operator}, fiber.StatusOK)
 }

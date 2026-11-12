@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -68,19 +69,7 @@ func Load(dir, fallback string) (*Translator, error) {
 
 // IsSupported reports whether locale is part of the allowlist.
 func IsSupported(locale string) bool {
-	for _, supported := range supportedLocales {
-		if supported == locale {
-			return true
-		}
-	}
-	return false
-}
-
-// SupportedLocales returns the allowlist copy.
-func SupportedLocales() []string {
-	out := make([]string, len(supportedLocales))
-	copy(out, supportedLocales)
-	return out
+	return slices.Contains(supportedLocales, locale)
 }
 
 // DefaultLocale returns the configured fallback locale.

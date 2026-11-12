@@ -1,11 +1,13 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -13,6 +15,9 @@ import (
 )
 
 func MigrateUp(dsn string) error {
+	if err := EnsureDatabaseExists(dsn); err != nil {
+		return err
+	}
 	m, err := newMigrator(dsn)
 	if err != nil {
 		return err
@@ -21,6 +26,42 @@ func MigrateUp(dsn string) error {
 
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
+	}
+	return nil
+}
+
+// EnsureDatabaseExists creates the target database if it does not exist yet.
+func EnsureDatabaseExists(dsn string) error {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return fmt.Errorf("parse dsn: %w", err)
+	}
+
+	dbName := strings.TrimPrefix(u.Path, "/")
+	if dbName == "" || dbName == "postgres" {
+		return nil
+	}
+
+	u.Path = "/postgres"
+	rootDSN := u.String()
+
+	db, err := sql.Open("postgres", rootDSN)
+	if err != nil {
+		return fmt.Errorf("open root db: %w", err)
+	}
+	defer db.Close()
+
+	var exists bool
+	query := "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)"
+	if err := db.QueryRow(query, dbName).Scan(&exists); err != nil {
+		return fmt.Errorf("check database exists: %w", err)
+	}
+
+	if !exists {
+		quotedDB := fmt.Sprintf("%q", dbName)
+		if _, err := db.Exec("CREATE DATABASE " + quotedDB); err != nil {
+			return fmt.Errorf("create database %s: %w", dbName, err)
+		}
 	}
 	return nil
 }

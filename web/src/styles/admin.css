@@ -1,0 +1,30 @@
+/* Modern professional admin theme tokens */
+.admin-theme {
+  --admin-bg: #f8fafc;
+  --admin-surface: #ffffff;
+  --admin-fg: #0f172a;
+  --admin-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-sidebar-bg: #0f172a;
+  --admin-sidebar-fg: #94a3b8;
+  --admin-sidebar-fg-hover: #ffffff;
+  --admin-sidebar-active-bg: #1e293b;
+  --admin-sidebar-active-fg: #38bdf8;
+  --admin-accent: #3b82f6;
+  --admin-accent-hover: #2563eb;
+}
+
+.dark .admin-theme {
+  --admin-bg: #090d16;
+  --admin-surface: #111827;
+  --admin-fg: #f3f4f6;
+  --admin-muted: #9ca3af;
+  --admin-border: #1f2937;
+  --admin-sidebar-bg: #030712;
+  --admin-sidebar-fg: #9ca3af;
+  --admin-sidebar-fg-hover: #f3f4f6;
+  --admin-sidebar-active-bg: #1f2937;
+  --admin-sidebar-active-fg: #60a5fa;
+  --admin-accent: #3b82f6;
+  --admin-accent-hover: #60a5fa;
+}

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-hidden="true">
+  <!-- Neo-brutalist secure login graphic: Padlock with security badge -->
+  <!-- Offset hard drop shadow -->
+  <rect x="70" y="70" width="260" height="260" fill="#000000" rx="16" />
+  <!-- Card background -->
+  <rect x="60" y="60" width="260" height="260" fill="#ffd93d" stroke="#000000" stroke-width="6" rx="16" />
+
+  <!-- Top bar badge decoration -->
+  <rect x="90" y="90" width="70" height="28" fill="#ff6b6b" stroke="#000000" stroke-width="4" rx="6" />
+  <text x="125" y="108" font-family="Space Mono, monospace" font-size="12" font-weight="bold" fill="#000000" text-anchor="middle">AUTH</text>
+
+  <circle cx="280" cy="104" r="14" fill="#4ecdc4" stroke="#000000" stroke-width="4" />
+
+  <!-- Padlock body -->
+  <path d="M140,190 h120 v105 a14,14 0 0,1 -14,14 h-92 a14,14 0 0,1 -14,-14 v-105 z" fill="#ffffff" stroke="#000000" stroke-width="6" stroke-linejoin="round" />
+
+  <!-- Padlock shackle -->
+  <path d="M164,190 v-46 a36,36 0 0,1 72,0 v46" fill="none" stroke="#000000" stroke-width="6" stroke-linecap="round" />
+
+  <!-- Keyhole -->
+  <circle cx="200" cy="232" r="12" fill="#000000" />
+  <path d="M195,238 h10 v32 h-10 z" fill="#000000" />
+
+  <!-- Small accent sparkles -->
+  <circle cx="105" cy="275" r="7" fill="#ff6b6b" stroke="#000000" stroke-width="3" />
+  <circle cx="295" cy="245" r="9" fill="#ffffff" stroke="#000000" stroke-width="3" />
+</svg>

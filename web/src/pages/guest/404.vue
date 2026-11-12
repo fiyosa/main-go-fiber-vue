@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { RouterLink } from 'vue-router'
 
-  import { BrutalBadge, BrutalCard } from './components/ui'
+  import { BrutalBadge, BrutalCard } from '../../components/guest/ui'
 </script>
 
 <template>

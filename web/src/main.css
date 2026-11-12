@@ -2,7 +2,8 @@
 /* The guest stylesheet owns the Neo-Brutalism design tokens. Importing it from
    the app entry keeps Tailwind processing `@theme` in one pass while the
    tokens themselves only resolve inside `.guest-brutal`. */
-@import './pages/guest/style/brutal.css';
+@import './styles/brutal.css';
+@import './styles/admin.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
