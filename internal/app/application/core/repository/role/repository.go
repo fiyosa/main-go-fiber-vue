@@ -6,7 +6,6 @@ import (
 
 	"gorm.io/gorm"
 
-	"go-fiber-vue/internal/app/domain/core/entity"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
 )
 
@@ -31,8 +30,6 @@ type Role struct {
 type Repository interface {
 	// List returns every role ordered by name, each with its permissions.
 	List(ctx context.Context) ([]Role, error)
-	// IsAdmin reports whether the user holds the bypass role.
-	IsAdmin(ctx context.Context, userID uint64) (bool, error)
 	// HasPermission reports whether any of the user's roles grants permission.
 	HasPermission(ctx context.Context, userID uint64, permission string) (bool, error)
 	// NamesByUserID returns every role name held by the user, ordered by name.
@@ -107,14 +104,6 @@ func (r *gormRepository) List(ctx context.Context) ([]Role, error) {
 	return roles, nil
 }
 
-const isAdminQuery = `
-SELECT EXISTS (
-    SELECT 1
-    FROM user_has_roles ur
-    JOIN roles r ON r.id = ur.role_id
-    WHERE ur.user_id = ? AND r.name = ?
-)`
-
 const hasPermissionQuery = `
 SELECT EXISTS (
     SELECT 1
@@ -130,17 +119,6 @@ FROM user_has_roles ur
 JOIN roles r ON r.id = ur.role_id
 WHERE ur.user_id = ?
 ORDER BY r.name ASC`
-
-func (r *gormRepository) IsAdmin(ctx context.Context, userID uint64) (bool, error) {
-	var exists bool
-	err := r.db.WithContext(ctx).
-		Raw(isAdminQuery, userID, entity.BypassRole).
-		Scan(&exists).Error
-	if err != nil {
-		return false, exceptions.FromDB(err)
-	}
-	return exists, nil
-}
 
 func (r *gormRepository) HasPermission(ctx context.Context, userID uint64, permission string) (bool, error) {
 	var exists bool

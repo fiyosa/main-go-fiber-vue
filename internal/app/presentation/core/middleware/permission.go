@@ -27,10 +27,9 @@ type TokenValidator interface {
 	ValidateAccessToken(raw string) (*platformauth.Claims, error)
 }
 
-// Authorizer answers whether a user holds a permission or admin role.
+// Authorizer answers whether a user holds a permission.
 type Authorizer interface {
 	Can(ctx context.Context, userID uint64, permission string) (bool, error)
-	IsAdmin(ctx context.Context, userID uint64) (bool, error)
 }
 
 // Permission returns the factory used at route registration:

@@ -2,9 +2,9 @@ package entity
 
 import "time"
 
-// BypassRole is the only role that skips every permission check. It is seeded
-// by the console and must not be created through the API.
-const BypassRole = "admin"
+// AdminRole is the default role seeded with every permission.
+// Access is determined purely by permission rows; there is no hardcoded bypass.
+const AdminRole = "admin"
 
 type Role struct {
 	ID        uint64    `gorm:"column:id;primaryKey"`

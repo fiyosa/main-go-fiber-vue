@@ -9,12 +9,11 @@ import (
 
 // Resolver is the read side of the authorization tables.
 type Resolver interface {
-	IsAdmin(ctx context.Context, userID uint64) (bool, error)
 	HasPermission(ctx context.Context, userID uint64, permission string) (bool, error)
 }
 
-// Authorizer answers permission questions. The bypass role is checked first so
-// an admin never needs permission rows, matching Laravel's Gate::before.
+// Authorizer answers permission questions. Access is decided only by the
+// permission rows attached to the caller's roles: there is no admin bypass.
 type Authorizer struct {
 	resolver Resolver
 }
@@ -36,21 +35,5 @@ func (a *Authorizer) Can(ctx context.Context, userID uint64, permission string) 
 		return false, exceptions.Internal(nil)
 	}
 
-	admin, err := a.resolver.IsAdmin(ctx, userID)
-	if err != nil {
-		return false, err
-	}
-	if admin {
-		return true, nil
-	}
-
 	return a.resolver.HasPermission(ctx, userID, permission)
-}
-
-// IsAdmin reports whether the user holds the admin bypass role.
-func (a *Authorizer) IsAdmin(ctx context.Context, userID uint64) (bool, error) {
-	if a == nil || a.resolver == nil {
-		return false, exceptions.ServiceUnavailable(nil)
-	}
-	return a.resolver.IsAdmin(ctx, userID)
 }

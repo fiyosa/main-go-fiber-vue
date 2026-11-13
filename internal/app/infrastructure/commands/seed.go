@@ -18,8 +18,9 @@ func Seed() *cobra.Command {
 	return &cobra.Command{
 		Use:   "seed",
 		Short: "Seed roles and permissions",
-		Long: "Seed the bypass role and every permission registered by the API\n" +
-			"route table. Safe to run repeatedly; no user account is created.",
+		Long: "Seed the default admin role and every permission registered by the API\n" +
+			"route table, then attach all permissions to the admin role. Safe to run\n" +
+			"repeatedly; no user account is created.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {
@@ -53,7 +54,7 @@ func Seed() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("seed complete: role=%s permissions=%d\n", entity.BypassRole, len(names))
+			fmt.Printf("seed complete: role=%s permissions=%d\n", entity.AdminRole, len(names))
 			for _, name := range names {
 				fmt.Printf("  - %s\n", name)
 			}

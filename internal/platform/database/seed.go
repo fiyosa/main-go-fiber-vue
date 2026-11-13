@@ -12,8 +12,10 @@ import (
 	"go-fiber-vue/internal/app/domain/core/entity"
 )
 
-// SeedRBAC writes the bypass role and every permission registered by the route
-// table. It is idempotent: running it twice leaves exactly the same rows.
+// SeedRBAC writes the default admin role and every permission registered by the
+// route table, then attaches all permissions to the admin role. It is idempotent:
+// running it twice leaves exactly the same rows. Permission rows are the only
+// source of access; there is no admin bypass.
 //
 // User accounts are intentionally not seeded. Create them manually and attach a
 // role through user_has_roles when an account is needed.
@@ -39,16 +41,15 @@ func SeedRBAC(ctx context.Context, db *gorm.DB, permissions []string) error {
 
 		if err := tx.Exec(
 			`INSERT INTO roles (name) VALUES (?) ON CONFLICT (name) DO NOTHING`,
-			entity.BypassRole,
+			entity.AdminRole,
 		).Error; err != nil {
-			return fmt.Errorf("seed role %q: %w", entity.BypassRole, err)
+			return fmt.Errorf("seed role %q: %w", entity.AdminRole, err)
 		}
 
-		// The bypass role does not need these rows at request time, but keeping
-		// them makes the role readable and portable if the bypass is removed.
+		// Grant every registered permission to the admin role.
 		var role entity.Role
-		if err := tx.Where("name = ?", entity.BypassRole).First(&role).Error; err != nil {
-			return fmt.Errorf("find bypass role: %w", err)
+		if err := tx.Where("name = ?", entity.AdminRole).First(&role).Error; err != nil {
+			return fmt.Errorf("find admin role: %w", err)
 		}
 
 		var perms []entity.Permission
