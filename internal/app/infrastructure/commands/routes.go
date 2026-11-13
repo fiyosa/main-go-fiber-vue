@@ -42,7 +42,7 @@ func Routes() *cobra.Command {
 				return fmt.Errorf("--all and --mcp cannot be combined")
 			}
 
-			cfg, err := config.Load()
+			cfg, err := config.LoadForConsole()
 			if err != nil {
 				return err
 			}

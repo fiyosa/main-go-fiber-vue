@@ -81,7 +81,21 @@ type Config struct {
 	CronSecretKey string `envconfig:"CRON_SECRET_KEY"`
 }
 
+// Load parses the configuration and enforces every runtime secret, so a
+// misconfigured application fails fast instead of starting with weak settings.
 func Load() (*Config, error) {
+	return load(true)
+}
+
+// LoadForConsole parses the configuration without enforcing runtime secrets.
+// Console commands only introspect the routing table, which does not depend on
+// HASHID_SALT, JWT_SECRET, CRON_SECRET_KEY or MCP_TOKEN, so they must stay usable
+// in production without those values in the environment.
+func LoadForConsole() (*Config, error) {
+	return load(false)
+}
+
+func load(validateSecrets bool) (*Config, error) {
 	loadDotEnv()
 
 	var cfg Config
@@ -95,6 +109,9 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("APP_LOCALE must be one of en, id (got %q)", cfg.AppLocale)
 	}
 	cfg.MCPPath = normalizePath(cfg.MCPPath)
+	if !validateSecrets {
+		return &cfg, nil
+	}
 	if err := cfg.validateMCP(); err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ func OpenAPI() *cobra.Command {
 			"applies optional manual overrides, and writes to public/docs/openapi.json.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadForConsole()
 			if err != nil {
 				return err
 			}

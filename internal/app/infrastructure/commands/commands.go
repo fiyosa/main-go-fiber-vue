@@ -22,6 +22,8 @@ func Root() *cobra.Command {
 	}
 	root.SetVersionTemplate(fmt.Sprintf("%s %s\n", consoleName, consoleVersion))
 	root.SetHelpFunc(renderHelp)
+	// Usage is noise on a runtime failure; the error itself is the useful part.
+	root.SilenceUsage = true
 	root.AddCommand(Migrate(), DB(), Routes(), OpenAPI())
 	return root
 }
