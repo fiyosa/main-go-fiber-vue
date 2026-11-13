@@ -1,9 +1,41 @@
 <script setup lang="ts">
-  import AdminStatCard from '../../components/admin/ui/AdminStatCard.vue'
+  import { ref, onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useDashboard } from './useDashboard'
+  import DashboardStatCard from '../../components/admin/dashboard/DashboardStatCard.vue'
+  import RecentRunsTable from '../../components/admin/dashboard/RecentRunsTable.vue'
+  import FailedRunsList from '../../components/admin/dashboard/FailedRunsList.vue'
+  import RunDetailModal from '../../components/admin/dashboard/RunDetailModal.vue'
+  import type { CronRunEntity } from '../../api/cron'
+
+  const router = useRouter()
+  const {
+    loading,
+    error,
+    healthStatus,
+    readyStatus,
+    crons,
+    currentUser,
+    cronStats,
+    runsStats,
+    recentRuns,
+    failedRuns,
+    loadDashboard,
+  } = useDashboard()
+
+  const selectedRun = ref<CronRunEntity | null>(null)
+
+  onMounted(() => {
+    loadDashboard()
+  })
+
+  const handleViewRun = (run: CronRunEntity) => {
+    selectedRun.value = run
+  }
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-8 pb-12">
     <!-- Welcome Banner -->
     <div
       class="flex flex-col justify-between gap-4 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 shadow-sm sm:flex-row sm:items-center"
@@ -11,133 +43,122 @@
       <div class="flex flex-col gap-1">
         <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard Overview</h1>
         <p class="text-sm text-[var(--admin-muted)]">
-          Welcome back, Administrator. Here's what's happening across your platform today.
+          Welcome back, <span class="font-semibold text-[var(--admin-fg)]">{{ currentUser?.email || 'Administrator' }}</span>. System monitoring and automation metrics.
         </p>
       </div>
 
       <div class="flex items-center gap-3">
         <button
           type="button"
-          class="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+          class="inline-flex min-h-10 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] px-4 text-xs font-semibold shadow-sm transition-colors hover:bg-[var(--admin-border)]/50"
+          :disabled="loading"
+          @click="loadDashboard"
         >
-          Download Report
+          {{ loading ? 'Refreshing...' : 'Refresh Data' }}
         </button>
       </div>
     </div>
 
-    <!-- Stat Cards Grid -->
+    <!-- Error banner if any -->
+    <div
+      v-if="error"
+      class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-semibold text-rose-600 dark:text-rose-400"
+    >
+      {{ error }}
+    </div>
+
+    <!-- Top Metrics Grid -->
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      <AdminStatCard title="Total Users" value="12,845" change="+12.3%" trend="up">
+      <DashboardStatCard
+        label="System Health"
+        :value="readyStatus === 'ready' ? 'Ready' : (readyStatus ?? 'Checking...') "
+        :hint="`Liveness: ${healthStatus ?? 'unknown'}`"
+        :tone="readyStatus === 'ready' ? 'ok' : 'danger'"
+      >
         <template #icon>
           <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </template>
-      </AdminStatCard>
+      </DashboardStatCard>
 
-      <AdminStatCard title="Active Sessions" value="1,429" change="+4.1%" trend="up">
+      <DashboardStatCard
+        label="Cron Jobs"
+        :value="cronStats.total"
+        :hint="`${cronStats.enabled} enabled, ${cronStats.disabled} paused`"
+        tone="neutral"
+      >
         <template #icon>
           <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </template>
-      </AdminStatCard>
+      </DashboardStatCard>
 
-      <AdminStatCard title="System Load" value="28.4%" change="-2.5%" trend="down">
+      <DashboardStatCard
+        label="Runs (Past 24h)"
+        :value="runsStats.total"
+        :hint="`${runsStats.success} success, ${runsStats.failed} failed`"
+        :tone="runsStats.failed > 0 ? 'warn' : 'ok'"
+      >
         <template #icon>
           <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </template>
-      </AdminStatCard>
+      </DashboardStatCard>
 
-      <AdminStatCard title="Error Rate" value="0.02%" change="0.0%" trend="neutral">
+      <DashboardStatCard
+        label="Failure Rate"
+        :value="`${runsStats.failureRate}%`"
+        :hint="`${runsStats.failed} failure(s) in window`"
+        :tone="runsStats.failureRate > 0 ? 'danger' : 'ok'"
+      >
         <template #icon>
           <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </template>
-      </AdminStatCard>
+      </DashboardStatCard>
     </div>
 
-    <!-- Main Content Section / Recent Activity Table Mock -->
-    <div class="rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 shadow-sm">
-      <div class="flex items-center justify-between border-b border-[var(--admin-border)] pb-6">
+    <!-- Issues / Failures Section -->
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-base font-bold tracking-tight">Recent Activity</h2>
-          <p class="text-xs text-[var(--admin-muted)]">Latest system access events and user actions</p>
-        </div>
-
-        <button type="button" class="text-xs font-semibold text-blue-500 hover:text-blue-600">View all →</button>
-      </div>
-
-      <div class="mt-4 divide-y divide-[var(--admin-border)]">
-        <div class="flex items-center justify-between py-3.5">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-xs font-bold text-emerald-500"
-            >
-              IN
-            </div>
-            <div>
-              <p class="text-xs font-semibold">User signed in successfully</p>
-              <p class="text-[11px] text-[var(--admin-muted)]">admin@example.com • 2 mins ago</p>
-            </div>
-          </div>
-          <span
-            class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400"
-            >Success</span
-          >
-        </div>
-
-        <div class="flex items-center justify-between py-3.5">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-9 items-center justify-center rounded-xl bg-blue-500/10 text-xs font-bold text-blue-500"
-            >
-              SEC
-            </div>
-            <div>
-              <p class="text-xs font-semibold">Security token refreshed</p>
-              <p class="text-[11px] text-[var(--admin-muted)]">System automated task • 15 mins ago</p>
-            </div>
-          </div>
-          <span
-            class="rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400"
-            >Info</span
-          >
-        </div>
-
-        <div class="flex items-center justify-between py-3.5">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-xs font-bold text-amber-500"
-            >
-              CFG
-            </div>
-            <div>
-              <p class="text-xs font-semibold">Environment configuration updated</p>
-              <p class="text-[11px] text-[var(--admin-muted)]">admin@example.com • 1 hour ago</p>
-            </div>
-          </div>
-          <span
-            class="rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400"
-            >Warning</span
-          >
+          <h2 class="text-base font-bold tracking-tight">Active Issues & Failures</h2>
+          <p class="text-xs text-[var(--admin-muted)]">Failed executions requiring attention</p>
         </div>
       </div>
+
+      <FailedRunsList :runs="failedRuns" :crons="crons" @view="handleViewRun" />
     </div>
+
+    <!-- Recent Activity Section -->
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold tracking-tight">Recent Cron Executions</h2>
+          <p class="text-xs text-[var(--admin-muted)]">Latest automation runs across all cron tasks</p>
+        </div>
+
+        <button
+          type="button"
+          class="text-xs font-semibold text-blue-500 hover:text-blue-600"
+          @click="router.push({ name: 'admin-cron' })"
+        >
+          Manage Cron Jobs →
+        </button>
+      </div>
+
+      <RecentRunsTable :runs="recentRuns" :crons="crons" :loading="loading" @view="handleViewRun" />
+    </div>
+
+    <!-- Run Detail Modal -->
+    <RunDetailModal
+      :run="selectedRun"
+      :cronName="selectedRun ? crons.find((c) => c.id === selectedRun?.cron_id)?.name ?? selectedRun.cron_id : ''"
+      @close="selectedRun = null"
+    />
   </div>
 </template>
