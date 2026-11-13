@@ -3,6 +3,7 @@ import { axiosLib } from '../../lib'
 export interface UserMe {
   id: number
   email: string
+  roles: string[]
 }
 
 interface MeResponse {

@@ -28,3 +28,12 @@
   --admin-accent: #3b82f6;
   --admin-accent-hover: #60a5fa;
 }
+
+/* Hide scrollbar helper */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -28,6 +28,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer func() {
+		if app.CronService != nil {
+			app.CronService.Stop()
+		}
+	}()
+
 	if err := bootstrap.Run(ctx, app.Fiber, cfg); err != nil {
 		slog.Error("run application", "error", err)
 		os.Exit(1)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, onMounted, computed } from 'vue'
+  import { ref, onMounted, computed, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import {
     listCrons,
@@ -14,6 +14,7 @@
   } from '../../api/cron'
   import { describeCron } from '../../utils/cron'
   import { useUIStore } from '../../store/ui'
+  import AdminPagination from '../../components/admin/ui/AdminPagination.vue'
 
   const router = useRouter()
   const ui = useUIStore()
@@ -55,6 +56,41 @@
   // Run detail modal state
   const showDetailModal = ref(false)
   const selectedRun = ref<CronRunEntity | null>(null)
+
+  // Pagination state for Cron Jobs
+  const cronPage = ref(1)
+  const cronLimit = ref(25)
+  const cronTotalPages = computed(() => Math.max(1, Math.ceil(filteredCrons.value.length / cronLimit.value)))
+  const paginatedCrons = computed(() => {
+    const page = Math.min(cronPage.value, cronTotalPages.value)
+    const start = (page - 1) * cronLimit.value
+    return filteredCrons.value.slice(start, start + cronLimit.value)
+  })
+
+  // Pagination state for Execution History
+  const runsPage = ref(1)
+  const runsLimit = ref(25)
+  const runsTotalPages = computed(() => Math.max(1, Math.ceil(filteredAllRuns.value.length / runsLimit.value)))
+  const paginatedAllRuns = computed(() => {
+    const page = Math.min(runsPage.value, runsTotalPages.value)
+    const start = (page - 1) * runsLimit.value
+    return filteredAllRuns.value.slice(start, start + runsLimit.value)
+  })
+
+  // Pagination state for Runs History Modal
+  const modalRunsPage = ref(1)
+  const modalRunsLimit = ref(25)
+  const modalRunsTotalPages = computed(() => Math.max(1, Math.ceil(cronRuns.value.length / modalRunsLimit.value)))
+  const paginatedCronRuns = computed(() => {
+    const page = Math.min(modalRunsPage.value, modalRunsTotalPages.value)
+    const start = (page - 1) * modalRunsLimit.value
+    return cronRuns.value.slice(start, start + modalRunsLimit.value)
+  })
+
+  watch(searchQuery, () => {
+    cronPage.value = 1
+    runsPage.value = 1
+  })
 
   const loadData = async () => {
     loading.value = true
@@ -132,6 +168,7 @@
 
   const viewCronRuns = async (cron: CronEntity) => {
     selectedCronName.value = cron.name
+    modalRunsPage.value = 1
     loadingRuns.value = true
     showRunsModal.value = true
     try {
@@ -195,7 +232,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="relative w-full max-w-md">
         <svg
-          class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--admin-muted)]"
+          class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--admin-muted)]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -211,9 +248,11 @@
           v-model="searchQuery"
           type="text"
           :placeholder="
-            activeTab === 'crons' ? 'Search cron jobs by name, schedule...' : 'Search execution runs by status, trigger...'
+            activeTab === 'crons'
+              ? 'Search cron jobs by name, schedule...'
+              : 'Search execution runs by status, trigger...'
           "
-          class="w-full min-h-11 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] py-2 pl-9 pr-4 text-xs outline-none transition-colors focus:border-blue-500"
+          class="min-h-11 w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] py-2 pr-4 pl-9 text-xs transition-colors outline-none focus:border-blue-500"
         />
       </div>
 
@@ -253,7 +292,9 @@
         "
         @click="activeTab = 'crons'"
       >
-        Cron Jobs ({{ filteredCrons.length }}<span v-if="filteredCrons.length !== crons.length"> / {{ crons.length }}</span>)
+        Cron Jobs ({{ filteredCrons.length
+        }}<span v-if="filteredCrons.length !== crons.length"> / {{ crons.length }}</span
+        >)
       </button>
       <button
         type="button"
@@ -265,7 +306,9 @@
         "
         @click="activeTab = 'runs'"
       >
-        Execution History ({{ filteredAllRuns.length }}<span v-if="filteredAllRuns.length !== allRuns.length"> / {{ allRuns.length }}</span>)
+        Execution History ({{ filteredAllRuns.length
+        }}<span v-if="filteredAllRuns.length !== allRuns.length"> / {{ allRuns.length }}</span
+        >)
       </button>
     </div>
 
@@ -278,7 +321,11 @@
       >
         <p class="text-sm font-semibold text-[var(--admin-fg)]">No cron jobs found</p>
         <p class="mt-1 text-xs text-[var(--admin-muted)]">
-          {{ crons.length === 0 ? 'Create your first scheduled JS background task to get started.' : 'Try adjusting your search query.' }}
+          {{
+            crons.length === 0
+              ? 'Create your first scheduled JS background task to get started.'
+              : 'Try adjusting your search query.'
+          }}
         </p>
         <button
           v-if="crons.length === 0"
@@ -290,9 +337,9 @@
         </button>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-5">
+      <div v-else class="flex flex-col gap-5">
         <div
-          v-for="cron in filteredCrons"
+          v-for="cron in paginatedCrons"
           :key="cron.id"
           class="flex flex-col justify-between gap-4 rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-6 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center"
         >
@@ -343,7 +390,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-fg)] transition-colors hover:bg-[var(--admin-border)]/50"
+              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition-colors hover:bg-emerald-500/20"
               @click="handleTrigger(cron)"
               title="Run Now"
               aria-label="Run Now"
@@ -355,19 +402,7 @@
             <div class="h-6 w-px bg-[var(--admin-border)]" aria-hidden="true"></div>
             <button
               type="button"
-              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-fg)] transition-colors hover:bg-[var(--admin-border)]/50"
-              @click="viewCronRuns(cron)"
-              title="Runs History"
-              aria-label="Runs History"
-            >
-              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-fg)] transition-colors hover:bg-[var(--admin-border)]/50"
+              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-500/20"
               @click="openEditModal(cron)"
               title="Edit"
               aria-label="Edit"
@@ -378,6 +413,18 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="inline-flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 transition-colors hover:bg-purple-500/20"
+              @click="viewCronRuns(cron)"
+              title="Runs History"
+              aria-label="Runs History"
+            >
+              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </button>
             <div class="h-6 w-px bg-[var(--admin-border)]" aria-hidden="true"></div>
@@ -400,6 +447,14 @@
             </button>
           </div>
         </div>
+
+        <!-- Cron Pagination Controls -->
+        <AdminPagination
+          v-if="filteredCrons.length > 0"
+          v-model:page="cronPage"
+          v-model:limit="cronLimit"
+          :total="filteredCrons.length"
+        />
       </div>
     </div>
 
@@ -412,51 +467,69 @@
       >
         <p class="text-sm font-semibold text-[var(--admin-fg)]">No execution runs found</p>
         <p class="mt-1 text-xs text-[var(--admin-muted)]">
-          {{ allRuns.length === 0 ? 'Cron execution logs and console outputs will appear here.' : 'Try adjusting your search query.' }}
+          {{
+            allRuns.length === 0
+              ? 'Cron execution logs and console outputs will appear here.'
+              : 'Try adjusting your search query.'
+          }}
         </p>
       </div>
-      <div v-else class="overflow-x-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)]">
-        <table class="w-full text-left text-xs">
-          <thead
-            class="border-b border-[var(--admin-border)] bg-[var(--admin-border)]/20 text-[var(--admin-muted)] uppercase"
-          >
-            <tr>
-              <th class="px-4 py-3 font-semibold">Status</th>
-              <th class="px-4 py-3 font-semibold">Trigger</th>
-              <th class="px-4 py-3 font-semibold">Started At</th>
-              <th class="px-4 py-3 font-semibold">Duration</th>
-              <th class="px-4 py-3 font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[var(--admin-border)]">
-            <tr v-for="run in filteredAllRuns" :key="run.id" class="transition-colors hover:bg-[var(--admin-border)]/10">
-              <td class="px-4 py-3.5">
-                <span
-                  class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase"
-                  :class="{
-                    'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': run.status === 'success',
-                    'bg-rose-500/10 text-rose-600 dark:text-rose-400': run.status === 'failed',
-                    'bg-amber-500/10 text-amber-600 dark:text-amber-400': run.status === 'running',
-                  }"
-                >
-                  {{ run.status }}
-                </span>
-              </td>
-              <td class="px-4 py-3.5 font-medium capitalize">{{ run.trigger_type }}</td>
-              <td class="px-4 py-3.5 text-[var(--admin-muted)]">{{ formatDate(run.started_at) }}</td>
-              <td class="px-4 py-3.5 font-mono">{{ run.duration_ms }} ms</td>
-              <td class="px-4 py-3.5">
-                <button
-                  type="button"
-                  class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-xs font-semibold hover:bg-[var(--admin-border)]/50"
-                  @click="viewRunDetail(run)"
-                >
-                  View Output
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-else class="flex flex-col gap-4">
+        <div class="overflow-x-auto rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface)]">
+          <table class="w-full text-left text-xs">
+            <thead
+              class="border-b border-[var(--admin-border)] bg-[var(--admin-border)]/20 text-[var(--admin-muted)] uppercase"
+            >
+              <tr>
+                <th class="px-4 py-3 font-semibold">Status</th>
+                <th class="px-4 py-3 font-semibold">Trigger</th>
+                <th class="px-4 py-3 font-semibold">Started At</th>
+                <th class="px-4 py-3 font-semibold">Duration</th>
+                <th class="px-4 py-3 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--admin-border)]">
+              <tr
+                v-for="run in paginatedAllRuns"
+                :key="run.id"
+                class="transition-colors hover:bg-[var(--admin-border)]/10"
+              >
+                <td class="px-4 py-3.5">
+                  <span
+                    class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase"
+                    :class="{
+                      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400': run.status === 'success',
+                      'bg-rose-500/10 text-rose-600 dark:text-rose-400': run.status === 'failed',
+                      'bg-amber-500/10 text-amber-600 dark:text-amber-400': run.status === 'running',
+                    }"
+                  >
+                    {{ run.status }}
+                  </span>
+                </td>
+                <td class="px-4 py-3.5 font-medium capitalize">{{ run.trigger_type }}</td>
+                <td class="px-4 py-3.5 text-[var(--admin-muted)]">{{ formatDate(run.started_at) }}</td>
+                <td class="px-4 py-3.5 font-mono">{{ run.duration_ms }} ms</td>
+                <td class="px-4 py-3.5">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-xs font-semibold hover:bg-[var(--admin-border)]/50"
+                    @click="viewRunDetail(run)"
+                  >
+                    View Output
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Runs Pagination Controls -->
+        <AdminPagination
+          v-if="filteredAllRuns.length > 0"
+          v-model:page="runsPage"
+          v-model:limit="runsLimit"
+          :total="filteredAllRuns.length"
+        />
       </div>
     </div>
 
@@ -479,58 +552,70 @@
           </button>
         </div>
 
-        <div class="mt-4 max-h-[65vh] overflow-y-auto">
+        <div class="mt-4 flex flex-col gap-4 max-h-[65vh] overflow-y-auto">
           <div v-if="loadingRuns" class="py-8 text-center text-xs text-[var(--admin-muted)]">
             Loading runs history...
           </div>
           <div v-else-if="cronRuns.length === 0" class="py-8 text-center text-xs text-[var(--admin-muted)]">
             No execution runs found for this job.
           </div>
-          <table v-else class="w-full text-left text-xs">
-            <thead
-              class="border-b border-[var(--admin-border)] bg-[var(--admin-border)]/20 text-[var(--admin-muted)] uppercase"
-            >
-              <tr>
-                <th class="px-3 py-2.5 font-semibold">Status</th>
-                <th class="px-3 py-2.5 font-semibold">Trigger</th>
-                <th class="px-3 py-2.5 font-semibold">Started At</th>
-                <th class="px-3 py-2.5 font-semibold">Duration</th>
-                <th class="px-3 py-2.5 font-semibold">Output / Error</th>
-                <th class="px-3 py-2.5 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--admin-border)]">
-              <tr v-for="run in cronRuns" :key="run.id" class="hover:bg-[var(--admin-border)]/10">
-                <td class="px-3 py-3">
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                    :class="{
-                      'bg-emerald-500/10 text-emerald-600': run.status === 'success',
-                      'bg-rose-500/10 text-rose-600': run.status === 'failed',
-                      'bg-amber-500/10 text-amber-600': run.status === 'running',
-                    }"
-                  >
-                    {{ run.status }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 capitalize">{{ run.trigger_type }}</td>
-                <td class="px-3 py-3 text-[var(--admin-muted)]">{{ formatDate(run.started_at) }}</td>
-                <td class="px-3 py-3 font-mono">{{ run.duration_ms }} ms</td>
-                <td class="max-w-xs truncate px-3 py-3 font-mono text-[11px] text-[var(--admin-muted)]">
-                  {{ run.error || run.output || '-' }}
-                </td>
-                <td class="px-3 py-3">
-                  <button
-                    type="button"
-                    class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-xs font-semibold hover:bg-[var(--admin-border)]/50"
-                    @click="viewRunDetail(run)"
-                  >
-                    Details
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <template v-else>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead
+                  class="border-b border-[var(--admin-border)] bg-[var(--admin-border)]/20 text-[var(--admin-muted)] uppercase"
+                >
+                  <tr>
+                    <th class="px-3 py-2.5 font-semibold">Status</th>
+                    <th class="px-3 py-2.5 font-semibold">Trigger</th>
+                    <th class="px-3 py-2.5 font-semibold">Started At</th>
+                    <th class="px-3 py-2.5 font-semibold">Duration</th>
+                    <th class="px-3 py-2.5 font-semibold">Output / Error</th>
+                    <th class="px-3 py-2.5 font-semibold">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--admin-border)]">
+                  <tr v-for="run in paginatedCronRuns" :key="run.id" class="hover:bg-[var(--admin-border)]/10">
+                    <td class="px-3 py-3">
+                      <span
+                        class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                        :class="{
+                          'bg-emerald-500/10 text-emerald-600': run.status === 'success',
+                          'bg-rose-500/10 text-rose-600': run.status === 'failed',
+                          'bg-amber-500/10 text-amber-600': run.status === 'running',
+                        }"
+                      >
+                        {{ run.status }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-3 capitalize">{{ run.trigger_type }}</td>
+                    <td class="px-3 py-3 text-[var(--admin-muted)]">{{ formatDate(run.started_at) }}</td>
+                    <td class="px-3 py-3 font-mono">{{ run.duration_ms }} ms</td>
+                    <td class="max-w-xs truncate px-3 py-3 font-mono text-[11px] text-[var(--admin-muted)]">
+                      {{ run.error || run.output || '-' }}
+                    </td>
+                    <td class="px-3 py-3">
+                      <button
+                        type="button"
+                        class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1 text-xs font-semibold hover:bg-[var(--admin-border)]/50"
+                        @click="viewRunDetail(run)"
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Modal Runs Pagination Controls -->
+            <AdminPagination
+              v-if="cronRuns.length > 0"
+              v-model:page="modalRunsPage"
+              v-model:limit="modalRunsLimit"
+              :total="cronRuns.length"
+            />
+          </template>
         </div>
       </div>
     </div>

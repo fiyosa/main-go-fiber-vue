@@ -23,7 +23,7 @@ import (
 // route layer contract. A nil database, nil sql handle, and nil token service
 // are all valid, so console commands can build the route table without a live
 // database.
-func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService, validator middleware.TokenValidator) v1.Dependencies {
+func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService, validator middleware.TokenValidator, cronSvc *cronsvc.Service) v1.Dependencies {
 	userRepo := user.NewRepository(db)
 	loginRepo := auth.NewLoginRepository(
 		userRepo,
@@ -41,14 +41,9 @@ func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenSe
 	roleRepo := role.NewRepository(db)
 
 	cronRepo := cronrepo.NewRepository(db)
-	cronSvc := cronsvc.NewService(cronsvc.Options{
-		DB:        db,
-		Repo:      cronRepo,
-		SecretKey: cfg.CronSecretKey,
-	})
 
 	return v1.Dependencies{
-		AuthController:   controllers.NewAuthController(loginRepo, logoutRepo, registerRepo, !cfg.IsDevelopment()),
+		AuthController:   controllers.NewAuthController(loginRepo, logoutRepo, registerRepo, roleRepo, !cfg.IsDevelopment()),
 		HealthController: controllers.NewHealthController(pinger),
 		RoleController:   controllers.NewRoleController(roleRepo, newHashidEncoder(cfg)),
 		CronController:   controllers.NewCronController(cronRepo, cronSvc, newHashidEncoder(cfg), cfg.CronSecretKey),

@@ -62,7 +62,7 @@ func (s *Service) Start(ctx context.Context) error {
 
 	for _, c := range crons {
 		if c.Enabled {
-			s.scheduleCronLocked(&c)
+			s.scheduleCron(&c)
 		}
 	}
 
@@ -76,7 +76,10 @@ func (s *Service) Stop() {
 	}
 }
 
-func (s *Service) scheduleCronLocked(c *entity.Cron) {
+func (s *Service) scheduleCron(c *entity.Cron) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if s.scheduler == nil {
 		return
 	}
@@ -110,9 +113,7 @@ func (s *Service) scheduleCronLocked(c *entity.Cron) {
 		return
 	}
 
-	s.mu.Lock()
 	s.cronMap[cronID] = entryID
-	s.mu.Unlock()
 }
 
 
@@ -133,9 +134,7 @@ func (s *Service) ReloadCron(ctx context.Context, cronID uint64) {
 		return
 	}
 
-	s.mu.Lock()
-	s.scheduleCronLocked(c)
-	s.mu.Unlock()
+	s.scheduleCron(c)
 }
 
 func (s *Service) ExecuteCron(ctx context.Context, cronID uint64, triggerType string) (*entity.CronRun, error) {

@@ -97,7 +97,10 @@
         <span class="truncate" :class="collapsed ? 'lg:hidden' : ''">{{ label }}</span>
       </div>
 
-      <div class="flex shrink-0 items-center gap-1.5">
+      <div
+        class="flex shrink-0 items-center gap-1.5"
+        :class="collapsed ? 'lg:hidden' : ''"
+      >
         <span
           v-if="badge !== undefined"
           class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--admin-sidebar-active-fg)] lg:group-[.collapsed]:hidden"

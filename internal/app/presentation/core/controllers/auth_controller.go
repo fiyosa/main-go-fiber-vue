@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"go-fiber-vue/internal/app/application/core/repository/auth"
+	"go-fiber-vue/internal/app/application/core/repository/role"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
 	"go-fiber-vue/internal/app/presentation/core/middleware"
 	"go-fiber-vue/internal/app/presentation/core/request"
@@ -20,16 +21,18 @@ type AuthController struct {
 	login    auth.LoginRepository
 	logout   auth.LogoutRepository
 	register auth.RegisterRepository
+	roles    role.Repository
 	// secure marks auth cookies Secure; it is disabled in development so the
 	// cookies work over plain HTTP on localhost.
 	secure bool
 }
 
 // NewAuthController wires the login, logout, and register repositories
-// (auth.LoginRepository, auth.LogoutRepository, auth.RegisterRepository) and
-// the cookie security policy resolved by the bootstrap.
-func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, register auth.RegisterRepository, secure bool) *AuthController {
-	return &AuthController{login: login, logout: logout, register: register, secure: secure}
+// (auth.LoginRepository, auth.LogoutRepository, auth.RegisterRepository), the
+// role reader used by Me, and the cookie security policy resolved by the
+// bootstrap.
+func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, register auth.RegisterRepository, roles role.Repository, secure bool) *AuthController {
+	return &AuthController{login: login, logout: logout, register: register, roles: roles, secure: secure}
 }
 
 // Login handles POST /api/v1/auth/login.
@@ -70,6 +73,15 @@ func (c *AuthController) Me(fctx fiber.Ctx) error {
 
 	email, _ := fctx.Locals(middleware.LocalEmail).(string)
 
+	roleNames := []string{}
+	if c.roles != nil {
+		names, err := c.roles.NamesByUserID(fctx.Context(), userID)
+		if err != nil {
+			return err
+		}
+		roleNames = names
+	}
+
 	operator := "Profile"
 	if translator := lang.From(fctx); translator != nil {
 		operator = translator.T(lang.Locale(fctx), "lang.profile", nil)
@@ -78,6 +90,7 @@ func (c *AuthController) Me(fctx fiber.Ctx) error {
 	return response.Success(fctx, response.MeResource{
 		ID:    userID,
 		Email: email,
+		Roles: roleNames,
 	}, "lang.retrieved", map[string]string{"operator": operator}, fiber.StatusOK)
 }
 

@@ -2,7 +2,7 @@
   import { ref, onMounted, onUnmounted, computed } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useUIStore } from '../../../store/ui'
-  import { logout } from '../../../api/auth'
+  import { logout, getMe, type UserMe } from '../../../api/auth'
 
   defineProps<{
     sidebarOpen?: boolean
@@ -16,6 +16,22 @@
   const isDark = computed(() => ui.theme === 'dark')
   const route = useRoute()
   const router = useRouter()
+
+  const currentUser = ref<UserMe | null>(null)
+
+  onMounted(async () => {
+    try {
+      currentUser.value = await getMe()
+    } catch {
+      currentUser.value = { id: 1, email: 'admin@system.local', roles: [] }
+    }
+  })
+
+  const userEmail = computed(() => currentUser.value?.email || 'admin@system.local')
+  const userInitial = computed(() => {
+    const email = userEmail.value
+    return email ? email.charAt(0).toUpperCase() : 'A'
+  })
 
   const breadcrumbs = computed(() => {
     const name = route.name as string
@@ -181,9 +197,8 @@
           <div
             class="flex size-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-xs"
           >
-            A
+            {{ userInitial }}
           </div>
-          <span class="hidden text-xs font-semibold text-[var(--admin-fg)] md:inline-block">Admin User</span>
           <svg
             class="hidden size-3.5 text-[var(--admin-muted)] md:inline-block"
             fill="none"
@@ -201,8 +216,7 @@
           class="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1.5 text-xs shadow-lg"
         >
           <div class="border-b border-[var(--admin-border)] px-3 py-2">
-            <p class="font-semibold text-[var(--admin-fg)]">Administrator</p>
-            <p class="truncate text-[10px] text-[var(--admin-muted)]">admin@system.local</p>
+            <p class="truncate text-xs font-semibold text-[var(--admin-fg)]">{{ userEmail }}</p>
           </div>
           <RouterLink
             to="/"

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+  import { ref, onMounted, computed } from 'vue'
   import { RouterLink } from 'vue-router'
   import AdminNavItem from '../ui/AdminNavItem.vue'
   import AdminNavGroup from '../ui/AdminNavGroup.vue'
+  import { getMe, type UserMe } from '../../../api/auth'
 
   defineProps<{
     isOpen?: boolean
@@ -10,6 +12,25 @@
   defineEmits<{
     close: []
   }>()
+
+  const currentUser = ref<UserMe | null>(null)
+
+  onMounted(async () => {
+    try {
+      currentUser.value = await getMe()
+    } catch {
+      currentUser.value = { id: 1, email: 'admin@system.local', roles: ['admin'] }
+    }
+  })
+
+  const userEmail = computed(() => currentUser.value?.email || 'admin@system.local')
+  const userRole = computed(() => {
+    const roles = currentUser.value?.roles
+    if (roles && roles.length > 0) {
+      return roles.map((r) => r.charAt(0).toUpperCase() + r.slice(1)).join(', ')
+    }
+    return 'Administrator'
+  })
 </script>
 
 <template>
@@ -38,8 +59,8 @@
           </svg>
         </div>
         <div class="flex flex-col whitespace-nowrap lg:group-[.collapsed]:hidden">
-          <span class="text-sm font-bold tracking-tight text-[var(--admin-fg)]">Admin Control</span>
-          <span class="text-[10px] font-medium text-[var(--admin-muted)]">Enterprise Suite</span>
+          <span class="truncate text-sm font-bold tracking-tight text-[var(--admin-fg)]">{{ userEmail }}</span>
+          <span class="text-[10px] font-medium text-[var(--admin-muted)]">{{ userRole }}</span>
         </div>
       </RouterLink>
 
@@ -55,7 +76,7 @@
     </div>
 
     <!-- Navigation List -->
-    <div class="flex-1 overflow-y-auto px-3 py-6 whitespace-nowrap lg:px-4 lg:group-[.collapsed]:overflow-visible">
+    <div class="no-scrollbar flex-1 overflow-y-auto px-3 py-6 whitespace-nowrap lg:px-4 lg:group-[.collapsed]:overflow-visible">
       <div class="space-y-6">
         <!-- Main Section -->
         <div>
@@ -87,18 +108,6 @@
             Management
           </p>
           <div class="mt-2 space-y-1">
-            <AdminNavItem to="/admin" label="Analytics" badge="Live" :collapsed="!isOpen">
-              <template #icon>
-                <svg class="size-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </template>
-            </AdminNavItem>
-
             <AdminNavGroup
               label="Auth"
               :items="[{ key: 'register', label: 'Register', to: { name: 'admin-register' } }]"
@@ -110,26 +119,6 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                  />
-                </svg>
-              </template>
-            </AdminNavGroup>
-
-            <AdminNavGroup
-              label="System Users"
-              :items="[
-                { key: 'users', label: 'Users', to: { name: 'admin', query: { tab: 'users' } } },
-                { key: 'roles', label: 'Roles', to: { name: 'admin', query: { tab: 'roles' } } },
-                { key: 'permissions', label: 'Permissions', to: { name: 'admin', query: { tab: 'permissions' } } },
-              ]"
-              :collapsed="!isOpen"
-            >
-              <template #icon>
-                <svg class="size-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
               </template>
@@ -161,24 +150,6 @@
               </template>
             </AdminNavGroup>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- User Profile Footer -->
-    <div class="shrink-0 border-t border-[var(--admin-border)] p-3 lg:p-4">
-      <div
-        class="flex items-center gap-3 rounded-xl bg-[var(--admin-border)]/30 p-2.5 whitespace-nowrap"
-        :class="!isOpen ? 'lg:justify-center' : ''"
-      >
-        <div
-          class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white"
-        >
-          AD
-        </div>
-        <div class="flex flex-1 flex-col truncate lg:group-[.collapsed]:hidden">
-          <span class="truncate text-xs font-semibold text-[var(--admin-fg)]">Administrator</span>
-          <span class="truncate text-[10px] text-[var(--admin-muted)]">admin@system.local</span>
         </div>
       </div>
     </div>

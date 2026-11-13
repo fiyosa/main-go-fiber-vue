@@ -35,6 +35,8 @@ type Repository interface {
 	IsAdmin(ctx context.Context, userID uint64) (bool, error)
 	// HasPermission reports whether any of the user's roles grants permission.
 	HasPermission(ctx context.Context, userID uint64, permission string) (bool, error)
+	// NamesByUserID returns every role name held by the user, ordered by name.
+	NamesByUserID(ctx context.Context, userID uint64) ([]string, error)
 }
 
 type gormRepository struct {
@@ -122,6 +124,13 @@ SELECT EXISTS (
     WHERE ur.user_id = ? AND p.name = ?
 )`
 
+const namesByUserIDQuery = `
+SELECT r.name
+FROM user_has_roles ur
+JOIN roles r ON r.id = ur.role_id
+WHERE ur.user_id = ?
+ORDER BY r.name ASC`
+
 func (r *gormRepository) IsAdmin(ctx context.Context, userID uint64) (bool, error) {
 	var exists bool
 	err := r.db.WithContext(ctx).
@@ -142,4 +151,19 @@ func (r *gormRepository) HasPermission(ctx context.Context, userID uint64, permi
 		return false, exceptions.FromDB(err)
 	}
 	return exists, nil
+}
+
+func (r *gormRepository) NamesByUserID(ctx context.Context, userID uint64) ([]string, error) {
+	var rows []struct{ Name string }
+	err := r.db.WithContext(ctx).
+		Raw(namesByUserIDQuery, userID).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, exceptions.FromDB(err)
+	}
+	names := make([]string, 0, len(rows))
+	for _, row := range rows {
+		names = append(names, row.Name)
+	}
+	return names, nil
 }

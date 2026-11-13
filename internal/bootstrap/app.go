@@ -42,7 +42,7 @@ type Application struct {
 // such as `routes` can introspect the routing table from any working
 // directory and without a live database.
 func Router(cfg *config.Config) *fiber.App {
-	deps := wireAPI(cfg, nil, nil, nil, nil)
+	deps := wireAPI(cfg, nil, nil, nil, nil, nil)
 
 	app := fiber.New(fiber.Config{
 		AppName:       "app-api",
@@ -91,8 +91,6 @@ func New(cfg *config.Config) (*Application, error) {
 		return nil, fmt.Errorf("init token service: %w", err)
 	}
 
-	deps := wireAPI(cfg, db, sqlDB, tokens, tokens)
-
 	var cronSvc *cronsvc.Service
 	if cfg.CronEnabled && db != nil {
 		cronRepo := cronrepo.NewRepository(db)
@@ -101,6 +99,11 @@ func New(cfg *config.Config) (*Application, error) {
 			Repo:      cronRepo,
 			SecretKey: cfg.CronSecretKey,
 		})
+	}
+
+	deps := wireAPI(cfg, db, sqlDB, tokens, tokens, cronSvc)
+
+	if cronSvc != nil {
 		_ = cronSvc.Start(context.Background())
 	}
 
