@@ -8,8 +8,10 @@ import (
 
 	"go-fiber-vue/internal/app/application/core/authorization"
 	"go-fiber-vue/internal/app/application/core/repository/auth"
+	cronrepo "go-fiber-vue/internal/app/application/core/repository/cron"
 	"go-fiber-vue/internal/app/application/core/repository/role"
 	"go-fiber-vue/internal/app/application/core/repository/user"
+	cronsvc "go-fiber-vue/internal/app/application/core/service/cron"
 	"go-fiber-vue/internal/app/presentation/core/controllers"
 	"go-fiber-vue/internal/app/presentation/core/middleware"
 	"go-fiber-vue/internal/config"
@@ -22,12 +24,14 @@ import (
 // are all valid, so console commands can build the route table without a live
 // database.
 func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenService, validator middleware.TokenValidator) v1.Dependencies {
+	userRepo := user.NewRepository(db)
 	loginRepo := auth.NewLoginRepository(
-		user.NewRepository(db),
+		userRepo,
 		auth.NewRepository(db),
 		tokens,
 	)
 	logoutRepo := auth.NewLogoutRepository(auth.NewRepository(db))
+	registerRepo := auth.NewRegisterRepository(userRepo)
 
 	var pinger controllers.Pinger
 	if sqlDB != nil {
@@ -36,10 +40,18 @@ func wireAPI(cfg *config.Config, db *gorm.DB, sqlDB *sql.DB, tokens auth.TokenSe
 
 	roleRepo := role.NewRepository(db)
 
+	cronRepo := cronrepo.NewRepository(db)
+	cronSvc := cronsvc.NewService(cronsvc.Options{
+		DB:        db,
+		Repo:      cronRepo,
+		SecretKey: cfg.CronSecretKey,
+	})
+
 	return v1.Dependencies{
-		AuthController:   controllers.NewAuthController(loginRepo, logoutRepo, !cfg.IsDevelopment()),
+		AuthController:   controllers.NewAuthController(loginRepo, logoutRepo, registerRepo, !cfg.IsDevelopment()),
 		HealthController: controllers.NewHealthController(pinger),
 		RoleController:   controllers.NewRoleController(roleRepo, newHashidEncoder(cfg)),
+		CronController:   controllers.NewCronController(cronRepo, cronSvc, newHashidEncoder(cfg), cfg.CronSecretKey),
 		Tokens:           validator,
 		Authorizer:       authorization.New(roleRepo),
 	}

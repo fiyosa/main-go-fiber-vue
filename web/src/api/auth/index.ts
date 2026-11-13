@@ -1,5 +1,7 @@
 export { login } from './login'
 export type { LoginRequest, LoginResponse } from './login'
+export { register } from './register'
+export type { RegisterRequest, RegisterResponse } from './register'
 export { getMe } from './me'
 export type { UserMe } from './me'
 export { logout } from './logout'

@@ -14,19 +14,12 @@
 
 <template>
   <!-- Mobile Backdrop -->
-  <div
-    v-if="isOpen"
-    class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden"
-    @click="$emit('close')"
-  />
+  <div v-if="isOpen" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs lg:hidden" @click="$emit('close')" />
 
   <!-- Sidebar Container -->
   <aside
     class="group fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start"
-    :class="[
-      isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20',
-      { 'collapsed': !isOpen }
-    ]"
+    :class="[isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:w-20 lg:translate-x-0', { collapsed: !isOpen }]"
   >
     <!-- Brand Header -->
     <div
@@ -62,11 +55,13 @@
     </div>
 
     <!-- Navigation List -->
-    <div class="flex-1 overflow-y-auto px-3 py-6 lg:px-4 whitespace-nowrap lg:group-[.collapsed]:overflow-visible">
+    <div class="flex-1 overflow-y-auto px-3 py-6 whitespace-nowrap lg:px-4 lg:group-[.collapsed]:overflow-visible">
       <div class="space-y-6">
         <!-- Main Section -->
         <div>
-          <p class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden">
+          <p
+            class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden"
+          >
             Overview
           </p>
           <div class="mt-2 space-y-1">
@@ -86,7 +81,9 @@
 
         <!-- Management Section -->
         <div>
-          <p class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden">
+          <p
+            class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden"
+          >
             Management
           </p>
           <div class="mt-2 space-y-1">
@@ -101,6 +98,22 @@
                 </svg>
               </template>
             </AdminNavItem>
+
+            <AdminNavGroup
+              label="Auth"
+              :items="[{ key: 'register', label: 'Register', to: { name: 'admin-register' } }]"
+              :collapsed="!isOpen"
+            >
+              <template #icon>
+                <svg class="size-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+              </template>
+            </AdminNavGroup>
 
             <AdminNavGroup
               label="System Users"
@@ -123,6 +136,32 @@
             </AdminNavGroup>
           </div>
         </div>
+
+        <!-- Compute Section -->
+        <div>
+          <p
+            class="px-3 text-[11px] font-semibold tracking-wider text-[var(--admin-muted)] uppercase lg:group-[.collapsed]:hidden"
+          >
+            Compute
+          </p>
+          <div class="mt-2 space-y-1">
+            <AdminNavGroup
+              label="Worker"
+              :items="[{ key: 'cron', label: 'Cron', to: { name: 'admin-cron' } }]"
+              :collapsed="!isOpen"
+            >
+              <template #icon>
+                <svg class="size-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </template>
+            </AdminNavGroup>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -132,7 +171,9 @@
         class="flex items-center gap-3 rounded-xl bg-[var(--admin-border)]/30 p-2.5 whitespace-nowrap"
         :class="!isOpen ? 'lg:justify-center' : ''"
       >
-        <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+        <div
+          class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white"
+        >
           AD
         </div>
         <div class="flex flex-1 flex-col truncate lg:group-[.collapsed]:hidden">

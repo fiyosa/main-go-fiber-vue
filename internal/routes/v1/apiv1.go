@@ -16,6 +16,7 @@ type Dependencies struct {
 	AuthController   *controllers.AuthController
 	HealthController *controllers.HealthController
 	RoleController   *controllers.RoleController
+	CronController   *controllers.CronController
 
 	Tokens     middleware.TokenValidator
 	Authorizer middleware.Authorizer
@@ -34,4 +35,5 @@ func Register(group fiber.Router, deps Dependencies) {
 
 	coreroutes.RegisterAuthRoutes(group, deps.AuthController, deps.Tokens)
 	coreroutes.RegisterRoleRoutes(group, perm, deps.RoleController)
+	coreroutes.RegisterCronRoutes(group, perm, deps.CronController)
 }

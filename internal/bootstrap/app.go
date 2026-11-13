@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -12,7 +13,9 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"gorm.io/gorm"
 
+	cronrepo "go-fiber-vue/internal/app/application/core/repository/cron"
 	storagerepo "go-fiber-vue/internal/app/application/core/repository/storage"
+	cronsvc "go-fiber-vue/internal/app/application/core/service/cron"
 	"go-fiber-vue/internal/app/infrastructure/support/exceptions"
 	"go-fiber-vue/internal/config"
 	"go-fiber-vue/internal/platform/auth"
@@ -30,6 +33,8 @@ type Application struct {
 	MCPHandler http.Handler
 	// Storage is nil when STORAGE_* is not fully configured.
 	Storage storagerepo.Repository
+	// CronService is nil when cron is disabled.
+	CronService *cronsvc.Service
 }
 
 // Router builds a Fiber app with every route registered but no runtime
@@ -88,6 +93,17 @@ func New(cfg *config.Config) (*Application, error) {
 
 	deps := wireAPI(cfg, db, sqlDB, tokens, tokens)
 
+	var cronSvc *cronsvc.Service
+	if cfg.CronEnabled && db != nil {
+		cronRepo := cronrepo.NewRepository(db)
+		cronSvc = cronsvc.NewService(cronsvc.Options{
+			DB:        db,
+			Repo:      cronRepo,
+			SecretKey: cfg.CronSecretKey,
+		})
+		_ = cronSvc.Start(context.Background())
+	}
+
 	mcpHandler := newMCPHandler(cfg, sqlDB)
 
 	app := fiber.New(fiber.Config{
@@ -112,6 +128,7 @@ func New(cfg *config.Config) (*Application, error) {
 		Translator: translator,
 		MCPHandler: mcpHandler,
 		Storage:    newStorageRepository(cfg, db),
+		CronService: cronSvc,
 	}, nil
 }
 

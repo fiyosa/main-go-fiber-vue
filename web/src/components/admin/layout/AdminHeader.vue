@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, onMounted, onUnmounted, computed } from 'vue'
-  import { RouterLink, useRouter } from 'vue-router'
+  import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useUIStore } from '../../../store/ui'
   import { logout } from '../../../api/auth'
 
@@ -14,13 +14,52 @@
 
   const ui = useUIStore()
   const isDark = computed(() => ui.theme === 'dark')
+  const route = useRoute()
   const router = useRouter()
+
+  const breadcrumbs = computed(() => {
+    const name = route.name as string
+    if (name === 'admin') {
+      return ['Dashboard']
+    }
+    if (name === 'admin-register') {
+      return ['Auth', 'Register']
+    }
+    if (name === 'admin-cron') {
+      return ['Worker', 'Cron']
+    }
+    if (name === 'admin-cron-create') {
+      return ['Worker', 'Cron', 'Create']
+    }
+    if (name === 'admin-cron-edit') {
+      return ['Worker', 'Cron', 'Edit']
+    }
+    // Generic fallback
+    const segments = route.path.split('/').filter(Boolean)
+    const result: string[] = []
+    for (const seg of segments) {
+      if (seg === 'admin' || seg === 'work' || seg === 'auth') continue
+      if (/^\d+$/.test(seg)) continue
+      const capitalized = seg.charAt(0).toUpperCase() + seg.slice(1)
+      result.push(capitalized)
+    }
+    return result.length > 0 ? result : ['Dashboard']
+  })
 
   const toggleTheme = () => {
     ui.toggleTheme()
   }
 
   const handleLogout = async () => {
+    const ok = await ui.confirm({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out?',
+      confirmText: 'Sign Out',
+      cancelText: 'Cancel',
+      type: 'info',
+    })
+    if (!ok) return
+
     try {
       await logout()
     } finally {
@@ -50,27 +89,26 @@
     <div class="flex items-center gap-3">
       <button
         type="button"
-        class="inline-flex size-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] text-[var(--admin-muted)] shadow-xs transition-colors hover:text-[var(--admin-fg)] hover:bg-[var(--admin-border)]/50"
+        class="inline-flex size-9 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] text-[var(--admin-muted)] shadow-xs transition-colors hover:bg-[var(--admin-border)]/50 hover:text-[var(--admin-fg)]"
         :aria-label="sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'"
         :title="sidebarOpen ? 'Hide Menu' : 'Show Menu'"
         @click="$emit('toggleSidebar')"
       >
-        <svg
-          class="size-4.5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg class="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
 
-      <div class="hidden items-center gap-2 text-sm font-medium sm:flex">
-        <span class="text-[var(--admin-muted)]">Admin</span>
-        <span class="text-[var(--admin-muted)]">/</span>
-        <span class="font-semibold text-[var(--admin-fg)]">Dashboard</span>
-      </div>
+      <nav class="hidden items-center gap-2 text-sm font-medium sm:flex" aria-label="Breadcrumb">
+        <template v-for="(crumb, index) in breadcrumbs" :key="index">
+          <span
+            :class="index === breadcrumbs.length - 1
+              ? 'font-semibold text-[var(--admin-fg)]'
+              : 'text-[var(--admin-muted)]'"
+          >{{ crumb }}</span>
+          <span v-if="index < breadcrumbs.length - 1" class="text-[var(--admin-muted)]">/</span>
+        </template>
+      </nav>
     </div>
 
     <!-- Right Area: Actions -->
@@ -146,7 +184,13 @@
             A
           </div>
           <span class="hidden text-xs font-semibold text-[var(--admin-fg)] md:inline-block">Admin User</span>
-          <svg class="size-3.5 text-[var(--admin-muted)] hidden md:inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg
+            class="hidden size-3.5 text-[var(--admin-muted)] md:inline-block"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
@@ -154,29 +198,43 @@
         <!-- Dropdown Menu -->
         <div
           v-if="dropdownOpen"
-          class="absolute right-0 mt-2 w-48 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1.5 shadow-lg z-50 text-xs"
+          class="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] py-1.5 text-xs shadow-lg"
         >
           <div class="border-b border-[var(--admin-border)] px-3 py-2">
             <p class="font-semibold text-[var(--admin-fg)]">Administrator</p>
-            <p class="text-[10px] text-[var(--admin-muted)] truncate">admin@system.local</p>
+            <p class="truncate text-[10px] text-[var(--admin-muted)]">admin@system.local</p>
           </div>
           <RouterLink
             to="/"
-            class="flex items-center gap-2 px-3 py-2 text-[var(--admin-fg)] hover:bg-[var(--admin-border)]/50 transition-colors"
+            class="flex items-center gap-2 px-3 py-2 text-[var(--admin-fg)] transition-colors hover:bg-[var(--admin-border)]/50"
             @click="dropdownOpen = false"
           >
-            <svg class="size-4 text-[var(--admin-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            <svg
+              class="size-4 text-[var(--admin-muted)]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
             </svg>
             <span>Go to Root (/)</span>
           </RouterLink>
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-3 py-2 text-left text-rose-500 hover:bg-rose-500/10 transition-colors"
+            class="flex w-full items-center gap-2 px-3 py-2 text-left text-rose-500 transition-colors hover:bg-rose-500/10"
             @click="handleLogout"
           >
             <svg class="size-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
             </svg>
             <span>Logout</span>
           </button>

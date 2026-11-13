@@ -49,6 +49,8 @@
     "year": "Year",
     "period": "Period",
     "user": "User",
+    "email": "Email",
+    "password": "Password",
     "role": "Role",
     "permission": "Permission",
     "menu": "Menu",
@@ -133,7 +135,8 @@
     "company": "Company",
     "workflow_approval_stage": "Workflow Approval Stage",
     "workflow_approval_stages": "Workflow Approval Stages",
-    "invalid_credentials": "Email or Password is invalid"
+    "invalid_credentials": "Email or Password is invalid",
+    "email_already_taken": "Email is already registered"
   },
   "db": {
     "duplicate": "The data already exists",

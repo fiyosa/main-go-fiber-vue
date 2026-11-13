@@ -55,7 +55,7 @@
     (active) => {
       if (active) isOpen.value = true
     },
-    { immediate: true },
+    { immediate: true }
   )
 
   const toggle = () => {
@@ -87,7 +87,7 @@
       :class="[
         collapsed ? 'lg:justify-center lg:px-2' : 'justify-between',
         hasActiveChild
-          ? 'bg-[var(--admin-sidebar-active-bg)]/50 text-[var(--admin-sidebar-active-fg)] font-semibold'
+          ? 'bg-[var(--admin-sidebar-active-bg)]/50 font-semibold text-[var(--admin-sidebar-active-fg)]'
           : 'text-[var(--admin-sidebar-fg)]',
       ]"
       @click="toggle"
@@ -121,10 +121,7 @@
     <!-- Accordion for the wide sidebar and the mobile drawer. -->
     <div
       class="grid transition-all duration-200 ease-in-out"
-      :class="[
-        isOpen && !collapsed ? 'mt-1 grid-rows-[1fr]' : 'grid-rows-[0fr]',
-        collapsed ? 'lg:hidden' : '',
-      ]"
+      :class="[isOpen && !collapsed ? 'mt-1 grid-rows-[1fr]' : 'grid-rows-[0fr]', collapsed ? 'lg:hidden' : '']"
     >
       <div class="overflow-hidden">
         <div class="ml-4 space-y-1 border-l border-[var(--admin-border)] py-1 pl-3">
@@ -138,7 +135,7 @@
     <!-- Flyout popover for the collapsed mini-rail. -->
     <div
       v-if="collapsed && flyoutOpen"
-      class="absolute left-full top-0 z-50 ml-2 hidden w-48 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] p-1.5 shadow-xl lg:block"
+      class="absolute top-0 left-full z-50 ml-2 hidden w-48 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-sidebar-bg)] p-1.5 shadow-xl lg:block"
     >
       <div class="mb-1 border-b border-[var(--admin-border)] px-3 py-2">
         <p class="truncate text-xs font-bold tracking-wide text-[var(--admin-fg)]">{{ label }}</p>

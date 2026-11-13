@@ -35,8 +35,65 @@ const initialTheme = (): Theme => readStoredTheme() ?? systemTheme()
 export const useUIStore = defineStore('ui', () => {
   const sidebarOpen = ref(false)
   const theme = ref<Theme>(initialTheme())
+  const toast = ref<{ message: string; type: 'error' | 'success' } | null>(null)
+  let toastTimer: any = null
+
+  const confirmModal = ref<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmText: string
+    cancelText: string
+    type: 'danger' | 'warning' | 'info'
+    onConfirm: () => void
+    onCancel: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    type: 'warning',
+    onConfirm: () => {},
+    onCancel: () => {},
+  })
 
   applyTheme(theme.value)
+
+  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+    if (toastTimer) clearTimeout(toastTimer)
+    toast.value = { message, type }
+    toastTimer = setTimeout(() => {
+      toast.value = null
+    }, 4000)
+  }
+
+  const confirm = (options: {
+    title: string
+    message: string
+    confirmText?: string
+    cancelText?: string
+    type?: 'danger' | 'warning' | 'info'
+  }): Promise<boolean> => {
+    return new Promise((resolve) => {
+      confirmModal.value = {
+        isOpen: true,
+        title: options.title,
+        message: options.message,
+        confirmText: options.confirmText ?? 'Confirm',
+        cancelText: options.cancelText ?? 'Cancel',
+        type: options.type ?? 'warning',
+        onConfirm: () => {
+          confirmModal.value.isOpen = false
+          resolve(true)
+        },
+        onCancel: () => {
+          confirmModal.value.isOpen = false
+          resolve(false)
+        },
+      }
+    })
+  }
 
   const toggleSidebar = () => {
     sidebarOpen.value = !sidebarOpen.value
@@ -57,5 +114,5 @@ export const useUIStore = defineStore('ui', () => {
     setTheme(theme.value === 'dark' ? 'light' : 'dark')
   }
 
-  return { sidebarOpen, theme, toggleSidebar, setTheme, toggleTheme }
+  return { sidebarOpen, theme, toast, confirmModal, toggleSidebar, setTheme, toggleTheme, showToast, confirm }
 })

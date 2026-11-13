@@ -17,17 +17,19 @@ import (
 // AuthController handles /api/v1/auth/* endpoints.
 // All imports stay within: repository, request, response.
 type AuthController struct {
-	login  auth.LoginRepository
-	logout auth.LogoutRepository
+	login    auth.LoginRepository
+	logout   auth.LogoutRepository
+	register auth.RegisterRepository
 	// secure marks auth cookies Secure; it is disabled in development so the
 	// cookies work over plain HTTP on localhost.
 	secure bool
 }
 
-// NewAuthController wires the login and logout repositories (auth.LoginRepository,
-// auth.LogoutRepository) and the cookie security policy resolved by the bootstrap.
-func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, secure bool) *AuthController {
-	return &AuthController{login: login, logout: logout, secure: secure}
+// NewAuthController wires the login, logout, and register repositories
+// (auth.LoginRepository, auth.LogoutRepository, auth.RegisterRepository) and
+// the cookie security policy resolved by the bootstrap.
+func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, register auth.RegisterRepository, secure bool) *AuthController {
+	return &AuthController{login: login, logout: logout, register: register, secure: secure}
 }
 
 // Login handles POST /api/v1/auth/login.
@@ -91,4 +93,31 @@ func (c *AuthController) Logout(fctx fiber.Ctx) error {
 	}
 
 	return response.Success(fctx, nil, "lang.logged_out_successfully", nil, fiber.StatusOK)
+}
+
+// Register handles POST /api/v1/auth/register.
+func (c *AuthController) Register(fctx fiber.Ctx) error {
+	var req request.RegisterRequest
+	if err := req.Bind(fctx); err != nil {
+		return err
+	}
+
+	if c.register == nil {
+		return exceptions.ServiceUnavailable(nil)
+	}
+
+	result, err := c.register.Register(fctx.Context(), req.Email, req.Password)
+	if err != nil {
+		return err
+	}
+
+	operator := "User"
+	if translator := lang.From(fctx); translator != nil {
+		operator = translator.T(lang.Locale(fctx), "lang.user", nil)
+	}
+
+	return response.Success(fctx, response.RegisterResource{
+		ID:    result.ID,
+		Email: result.Email,
+	}, "lang.created", map[string]string{"operator": operator}, fiber.StatusCreated)
 }

@@ -91,6 +91,30 @@ func BuildSpec(routes []RouteInfo, overrideJSON []byte) (map[string]any, error) 
 						"message": map[string]any{"type": "string", "example": "Logged in successfully"},
 					},
 				},
+				"RegisterRequest": map[string]any{
+					"type":     "object",
+					"required": []any{"email", "password"},
+					"properties": map[string]any{
+						"email":    map[string]any{"type": "string", "format": "email", "example": "user@example.com"},
+						"password": map[string]any{"type": "string", "format": "password", "example": "secret123"},
+					},
+				},
+				"RegisterResponse": map[string]any{
+					"type":     "object",
+					"required": []any{"success", "message", "data"},
+					"properties": map[string]any{
+						"success": map[string]any{"type": "boolean", "example": true},
+						"message": map[string]any{"type": "string", "example": "User Created"},
+						"data": map[string]any{
+							"type": "object",
+							"required": []any{"id", "email"},
+							"properties": map[string]any{
+								"id":    map[string]any{"type": "integer", "example": 1},
+								"email": map[string]any{"type": "string", "example": "user@example.com"},
+							},
+						},
+					},
+				},
 			},
 			"securitySchemes": map[string]any{
 				"cookieAuth": map[string]any{
@@ -207,6 +231,84 @@ func defaultOperation(path, method string) map[string]any {
 			},
 		}
 	}
+	if path == "/api/v1/auth/register" && method == "post" {
+		return map[string]any{
+			"tags":        []any{"Auth"},
+			"summary":     "Register",
+			"description": "Creates a new user account. The password must be 8-72 characters. When a role named `user` exists, the new user is linked to it. No auth cookies are issued.",
+			"requestBody": map[string]any{
+				"required": true,
+				"content": map[string]any{
+					"application/json": map[string]any{
+						"schema": map[string]any{"$ref": "#/components/schemas/RegisterRequest"},
+					},
+				},
+			},
+			"responses": map[string]any{
+				"201": map[string]any{
+					"description": "User registered.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema":  map[string]any{"$ref": "#/components/schemas/RegisterResponse"},
+							"example": map[string]any{"success": true, "message": "User Created", "data": map[string]any{"id": 1, "email": "user@example.com"}},
+						},
+					},
+				},
+				"409": map[string]any{
+					"description": "Email already registered.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema":  map[string]any{"$ref": "#/components/schemas/ErrorEnvelope"},
+							"example": map[string]any{"success": false, "message": "Email is already registered"},
+						},
+					},
+				},
+				"422": map[string]any{
+					"description": "Validation error.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema":  map[string]any{"$ref": "#/components/schemas/ValidationErrorEnvelope"},
+							"example": map[string]any{"success": false, "message": "The given data was invalid."},
+						},
+					},
+				},
+			},
+		}
+	}
+	if path == "/api/v1/auth/me" && method == "get" {
+		return map[string]any{
+			"tags":        []any{"Auth"},
+			"summary":     "Me",
+			"description": "Returns the authenticated user profile.",
+			"responses": map[string]any{
+				"200": map[string]any{
+					"description": "Authenticated user profile retrieved.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema": map[string]any{"$ref": "#/components/schemas/SuccessEnvelope"},
+						},
+					},
+				},
+			},
+		}
+	}
+	if path == "/api/v1/roles" && method == "get" {
+		return map[string]any{
+			"tags":        []any{"Roles"},
+			"summary":     "List Roles",
+			"description": "Returns all roles with their associated permissions.",
+			"responses": map[string]any{
+				"200": map[string]any{
+					"description": "Roles retrieved successfully.",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema": map[string]any{"$ref": "#/components/schemas/SuccessEnvelope"},
+						},
+					},
+				},
+			},
+		}
+	}
 	if (path == "/api/v1/healthz" || path == "/api/v1/readyz") && method == "get" {
 		tag := "Health"
 		summary := "Liveness probe"
@@ -220,6 +322,51 @@ func defaultOperation(path, method string) map[string]any {
 			"responses": map[string]any{
 				"200": map[string]any{
 					"description": "Success",
+					"content": map[string]any{
+						"application/json": map[string]any{
+							"schema": map[string]any{"$ref": "#/components/schemas/SuccessEnvelope"},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	if strings.HasPrefix(path, "/api/v1/crons") {
+		// Fiber registers the collection root as "/api/v1/crons/" (trailing
+		// slash), so normalize before matching.
+		normalized := strings.TrimSuffix(path, "/")
+		summary := ""
+		switch {
+		case normalized == "/api/v1/crons" && method == "get":
+			summary = "GET Crons"
+		case normalized == "/api/v1/crons" && method == "post":
+			summary = "Store Cron"
+		case normalized == "/api/v1/crons/runs" && method == "get":
+			summary = "GET Cron Runs"
+		case normalized == "/api/v1/crons/runs/:run_id" && method == "get":
+			summary = "GET Cron Run"
+		case normalized == "/api/v1/crons/:id" && method == "get":
+			summary = "GET Cron"
+		case normalized == "/api/v1/crons/:id" && method == "put":
+			summary = "Update Cron"
+		case normalized == "/api/v1/crons/:id" && method == "delete":
+			summary = "Delete Cron"
+		case normalized == "/api/v1/crons/:id/toggle" && method == "post":
+			summary = "Toggle Cron"
+		case normalized == "/api/v1/crons/:id/trigger" && method == "post":
+			summary = "Trigger Cron"
+		case normalized == "/api/v1/crons/:id/runs" && method == "get":
+			summary = "GET Cron Specific Runs"
+		default:
+			summary = strings.ToUpper(method) + " " + path
+		}
+		return map[string]any{
+			"tags":    []any{"Crons"},
+			"summary": summary,
+			"responses": map[string]any{
+				"200": map[string]any{
+					"description": "Successful response",
 					"content": map[string]any{
 						"application/json": map[string]any{
 							"schema": map[string]any{"$ref": "#/components/schemas/SuccessEnvelope"},

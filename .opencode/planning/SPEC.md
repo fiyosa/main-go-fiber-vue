@@ -47,3 +47,22 @@ Prevent authenticated users from visiting `/login` or `/register` by redirecting
 - Visiting `/admin` while unauthenticated redirects to `/login`.
 - Logged-out `/register` still shows the guest 404 page.
 - All unit tests pass and both builds succeed.
+
+## Follow-up: Register API & OpenAPI Refinement
+
+### Scope
+1. Add `POST /api/v1/auth/register`:
+   - No session or cookies are issued.
+   - Assigns role `user` when it exists.
+   - Password validation enforces `min=8`.
+   - Duplicate email returns `409` with `auth.email_taken`.
+2. Tidy OpenAPI labels and group tags:
+   - Summaries omit the HTTP method prefix; Scalar renders the method badge separately.
+   - Groups: `Auth` (login/register/logout/me), `Roles` (roles), `Health` (`healthz`/`readyz`); fallback `Default`.
+   - Regenerate `public/docs/openapi.json` with `go run ./cmd/console openapi`.
+3. Keep `lang/en.json` and `lang/id.json` key parity.
+
+### Success Criteria
+- Register returns `201` with `{id, email}` and never issues cookies.
+- Every OpenAPI operation has a clean label and correct group.
+- Locale catalogs stay in sync and all Go tests, vet, and build pass.

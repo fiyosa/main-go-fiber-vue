@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 import GuestLayout from './guest/GuestLayout.vue'
+import AdminLayout from './admin/AdminLayout.vue'
+import AdminNotFound from './admin/AdminNotFound.vue'
 import { authGuard } from './authGuard'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/admin',
-    component: () => import('./admin/AdminLayout.vue'),
+    component: AdminLayout,
     meta: { requiresAuth: true },
     children: [
       {
@@ -15,7 +17,35 @@ const routes: RouteRecordRaw[] = [
         name: 'admin',
         component: () => import('./admin/AdminHome.vue'),
       },
+      {
+        path: 'auth/register',
+        name: 'admin-register',
+        component: () => import('./admin/AuthRegister.vue'),
+      },
+      {
+        path: 'work/cron',
+        name: 'admin-cron',
+        component: () => import('./admin/CronManager.vue'),
+      },
+      {
+        path: 'work/cron/create',
+        name: 'admin-cron-create',
+        component: () => import('./admin/CronForm.vue'),
+      },
+      {
+        path: 'work/cron/:id/edit',
+        name: 'admin-cron-edit',
+        component: () => import('./admin/CronForm.vue'),
+      },
     ],
+  },
+  {
+    // Top-level admin catch-all: unknown /admin/* paths render a standalone
+    // 404 page without the AdminLayout header and sidebar.
+    path: '/admin/:pathMatch(.*)*',
+    name: 'admin-not-found',
+    component: AdminNotFound,
+    meta: { requiresAuth: true },
   },
   {
     path: '/',

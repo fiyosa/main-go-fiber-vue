@@ -74,6 +74,11 @@ type Config struct {
 	// endpoints such as the API reference UI.
 	BasicAuthUsername string `envconfig:"BASIC_AUTH_USERNAME"`
 	BasicAuthPassword string `envconfig:"BASIC_AUTH_PASSWORD"`
+
+	// Cron* configure the cron job engine. Cron is off unless CRON_ENABLED=true.
+	// CRON_SECRET_KEY is required when cron is enabled to encrypt credentials.
+	CronEnabled  bool   `envconfig:"CRON_ENABLED" default:"false"`
+	CronSecretKey string `envconfig:"CRON_SECRET_KEY"`
 }
 
 func Load() (*Config, error) {
@@ -94,6 +99,9 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	if err := cfg.validateHashid(); err != nil {
+		return nil, err
+	}
+	if err := cfg.validateCron(); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
@@ -131,6 +139,17 @@ func (c *Config) validateHashid() error {
 	}
 	if strings.TrimSpace(c.HashidSalt) == "" {
 		return errors.New("HASHID_SALT is required outside development")
+	}
+	return nil
+}
+
+// validateCron enforces that the secret key exists when cron is enabled.
+func (c *Config) validateCron() error {
+	if !c.CronEnabled {
+		return nil
+	}
+	if strings.TrimSpace(c.CronSecretKey) == "" {
+		return errors.New("CRON_SECRET_KEY is required when CRON_ENABLED=true")
 	}
 	return nil
 }
