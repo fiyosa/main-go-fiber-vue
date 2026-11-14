@@ -8,6 +8,11 @@ import (
 )
 
 // Migrate returns a cobra.Command that wraps all migration subcommands.
+//
+// Every subcommand resolves the configuration with config.LoadForConsole:
+// migrations only need DatabaseDSN, so they must not fail on runtime secrets
+// (HASHID_SALT, JWT_SECRET, CRON_SECRET_KEY, MCP_TOKEN) that the application
+// itself validates at startup.
 func Migrate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
@@ -22,7 +27,7 @@ func migrateUp() *cobra.Command {
 		Use:   "up",
 		Short: "Apply all pending migrations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadForConsole()
 			if err != nil {
 				return err
 			}
@@ -36,7 +41,7 @@ func migrateStatus() *cobra.Command {
 		Use:   "status",
 		Short: "Show current migration version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadForConsole()
 			if err != nil {
 				return err
 			}
@@ -55,7 +60,7 @@ func migrateDown() *cobra.Command {
 		Use:   "down",
 		Short: "Roll back the most recent migration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := config.LoadForConsole()
 			if err != nil {
 				return err
 			}

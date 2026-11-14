@@ -76,7 +76,9 @@
     </div>
 
     <!-- Navigation List -->
-    <div class="no-scrollbar flex-1 overflow-y-auto px-3 py-6 whitespace-nowrap lg:px-4 lg:group-[.collapsed]:overflow-visible">
+    <div
+      class="no-scrollbar flex-1 overflow-y-auto px-3 py-6 whitespace-nowrap lg:px-4 lg:group-[.collapsed]:overflow-visible"
+    >
       <div class="space-y-6">
         <!-- Main Section -->
         <div>
@@ -110,7 +112,10 @@
           <div class="mt-2 space-y-1">
             <AdminNavGroup
               label="Auth"
-              :items="[{ key: 'register', label: 'Register', to: { name: 'admin-register' } }]"
+              :items="[
+                { key: 'register', label: 'Register', to: { name: 'admin-register' } },
+                { key: 'change-password', label: 'Change Password', to: { name: 'admin-change-password' } },
+              ]"
               :collapsed="!isOpen"
             >
               <template #icon>

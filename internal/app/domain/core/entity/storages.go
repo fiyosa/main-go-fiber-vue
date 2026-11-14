@@ -7,6 +7,7 @@ import "time"
 type Storage struct {
 	ID           uint64    `gorm:"column:id;primaryKey"`
 	UserID       uint64    `gorm:"column:user_id;not null"`
+	User         *User     `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Key          string    `gorm:"column:key;size:32;not null;uniqueIndex"`
 	Path         string    `gorm:"column:path;type:text;not null"`
 	Bucket       string    `gorm:"column:bucket;size:255;not null"`

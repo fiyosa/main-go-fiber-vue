@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -13,6 +14,10 @@ import (
 // Repository reads user records.
 type Repository interface {
 	FindByEmail(ctx context.Context, email string) (*entity.User, error)
+	// FindByID returns a user by primary key, or nil when it does not exist.
+	FindByID(ctx context.Context, id uint64) (*entity.User, error)
+	// UpdatePassword replaces the password hash of an existing user.
+	UpdatePassword(ctx context.Context, id uint64, passwordHash string) error
 	// Create inserts a new user and, when roleName is not empty and a role with
 	// that name exists, links the user to the role. Both writes run in one
 	// transaction so a user can never be created without its default role.
@@ -43,6 +48,33 @@ func (r *gormRepository) FindByEmail(ctx context.Context, email string) (*entity
 		return nil, exceptions.FromDB(err)
 	}
 	return &found, nil
+}
+
+func (r *gormRepository) FindByID(ctx context.Context, id uint64) (*entity.User, error) {
+	var found entity.User
+	err := r.db.WithContext(ctx).
+		Where("id = ?", id).
+		First(&found).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, exceptions.FromDB(err)
+	}
+	return &found, nil
+}
+
+// UpdatePassword implements Repository. A missing row is not treated as an
+// error here; the change-password use case resolves the user first.
+func (r *gormRepository) UpdatePassword(ctx context.Context, id uint64, passwordHash string) error {
+	err := r.db.WithContext(ctx).
+		Model(&entity.User{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"password":   passwordHash,
+			"updated_at": time.Now().UTC(),
+		}).Error
+	return exceptions.FromDB(err)
 }
 
 // Create implements Repository. The user insert and the default role assignment

@@ -14,4 +14,5 @@ func RegisterAuthRoutes(group fiber.Router, controller *controllers.AuthControll
 	auth.Post("/register", controller.Register)
 	auth.Post("/logout", controller.Logout)
 	auth.Get("/me", middleware.Authenticate(tokens), controller.Me)
+	auth.Post("/change-password", middleware.Authenticate(tokens), controller.ChangePassword)
 }

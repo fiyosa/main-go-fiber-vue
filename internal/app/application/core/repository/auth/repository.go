@@ -14,6 +14,9 @@ import (
 type Repository interface {
 	CreateSession(ctx context.Context, session *entity.Auth) error
 	RevokeSession(ctx context.Context, token string) error
+	// RevokeAllForUser revokes every active session of a user. Used after a
+	// credential change so the old sessions can no longer be used.
+	RevokeAllForUser(ctx context.Context, userID uint64) error
 }
 
 type gormRepository struct {
@@ -40,6 +43,16 @@ func (r *gormRepository) RevokeSession(ctx context.Context, token string) error 
 	err := r.db.WithContext(ctx).
 		Model(&entity.Auth{}).
 		Where("token = ? AND revoked_at IS NULL", token).
+		Update("revoked_at", now).Error
+	return exceptions.FromDB(err)
+}
+
+// RevokeAllForUser implements Repository.
+func (r *gormRepository) RevokeAllForUser(ctx context.Context, userID uint64) error {
+	now := time.Now().UTC()
+	err := r.db.WithContext(ctx).
+		Model(&entity.Auth{}).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
 		Update("revoked_at", now).Error
 	return exceptions.FromDB(err)
 }

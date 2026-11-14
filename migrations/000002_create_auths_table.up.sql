@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS auths (
     id                 BIGSERIAL PRIMARY KEY,
-    user_id            BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    user_id            BIGINT NOT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
     token              TEXT NOT NULL,
     refresh_token      CHAR(64) NOT NULL,
-    impersonator_id    BIGINT NULL REFERENCES users (id) ON DELETE SET NULL,
+    impersonator_id    BIGINT NULL REFERENCES users (id) ON UPDATE CASCADE ON DELETE SET NULL,
     meta               JSONB NULL,
     revoked_at         TIMESTAMPTZ NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),

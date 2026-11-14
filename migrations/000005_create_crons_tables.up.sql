@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS crons_enabled_idx ON crons (enabled);
 
 CREATE TABLE IF NOT EXISTS cron_runs (
     id           BIGSERIAL PRIMARY KEY,
-    cron_id      BIGINT NOT NULL REFERENCES crons(id) ON DELETE CASCADE,
+    cron_id      BIGINT NOT NULL REFERENCES crons(id) ON UPDATE CASCADE ON DELETE CASCADE,
     status       VARCHAR(50) NOT NULL,
     trigger_type VARCHAR(50) NOT NULL,
     started_at   TIMESTAMPTZ NOT NULL DEFAULT now(),

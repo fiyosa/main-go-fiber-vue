@@ -18,21 +18,22 @@ import (
 // AuthController handles /api/v1/auth/* endpoints.
 // All imports stay within: repository, request, response.
 type AuthController struct {
-	login    auth.LoginRepository
-	logout   auth.LogoutRepository
-	register auth.RegisterRepository
-	roles    role.Repository
+	login          auth.LoginRepository
+	logout         auth.LogoutRepository
+	register       auth.RegisterRepository
+	changePassword auth.ChangePasswordRepository
+	roles          role.Repository
 	// secure marks auth cookies Secure; it is disabled in development so the
 	// cookies work over plain HTTP on localhost.
 	secure bool
 }
 
-// NewAuthController wires the login, logout, and register repositories
-// (auth.LoginRepository, auth.LogoutRepository, auth.RegisterRepository), the
-// role reader used by Me, and the cookie security policy resolved by the
-// bootstrap.
-func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, register auth.RegisterRepository, roles role.Repository, secure bool) *AuthController {
-	return &AuthController{login: login, logout: logout, register: register, roles: roles, secure: secure}
+// NewAuthController wires the login, logout, register, and change-password
+// repositories (auth.LoginRepository, auth.LogoutRepository,
+// auth.RegisterRepository, auth.ChangePasswordRepository), the role reader
+// used by Me, and the cookie security policy resolved by the bootstrap.
+func NewAuthController(login auth.LoginRepository, logout auth.LogoutRepository, register auth.RegisterRepository, changePassword auth.ChangePasswordRepository, roles role.Repository, secure bool) *AuthController {
+	return &AuthController{login: login, logout: logout, register: register, changePassword: changePassword, roles: roles, secure: secure}
 }
 
 // Login handles POST /api/v1/auth/login.
@@ -133,4 +134,31 @@ func (c *AuthController) Register(fctx fiber.Ctx) error {
 		ID:    result.ID,
 		Email: result.Email,
 	}, "lang.created", map[string]string{"operator": operator}, fiber.StatusCreated)
+}
+
+// ChangePassword handles POST /api/v1/auth/change-password. The caller must be
+// authenticated; on success every session of the user is revoked and the client
+// cookies are cleared so the next request requires a fresh login.
+func (c *AuthController) ChangePassword(fctx fiber.Ctx) error {
+	userID, ok := middleware.UserID(fctx)
+	if !ok {
+		return exceptions.Unauthorized("auth.unauthenticated", nil)
+	}
+
+	var req request.ChangePasswordRequest
+	if err := req.Bind(fctx); err != nil {
+		return err
+	}
+
+	if c.changePassword == nil {
+		return exceptions.ServiceUnavailable(nil)
+	}
+
+	if err := c.changePassword.ChangePassword(fctx.Context(), userID, req.NewPassword); err != nil {
+		return err
+	}
+
+	auth.ClearAuthCookies(fctx, c.secure)
+
+	return response.Success(fctx, nil, "lang.password_changed", nil, fiber.StatusOK)
 }

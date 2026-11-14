@@ -22,7 +22,7 @@ func (Cron) TableName() string {
 type CronRun struct {
 	ID          uint64     `gorm:"column:id;primaryKey"`
 	CronID      uint64     `gorm:"column:cron_id;not null;index"`
-	Cron        *Cron      `gorm:"foreignKey:CronID"`
+	Cron        *Cron      `gorm:"foreignKey:CronID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Status      string     `gorm:"column:status;size:50;not null"`
 	TriggerType string     `gorm:"column:trigger_type;size:50;not null"`
 	StartedAt   time.Time  `gorm:"column:started_at;not null;index"`

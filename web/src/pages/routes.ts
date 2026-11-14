@@ -23,6 +23,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./admin/AuthRegister.vue'),
       },
       {
+        path: 'auth/change-password',
+        name: 'admin-change-password',
+        component: () => import('./admin/AuthChangePassword.vue'),
+      },
+      {
         path: 'work/cron',
         name: 'admin-cron',
         component: () => import('./admin/CronManager.vue'),
