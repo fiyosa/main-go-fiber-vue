@@ -21,7 +21,7 @@
         "!eslint",
         "!typescript-language-server",
         "!tailwindcss-language-server",
-        "!vtsls",
+        "vtsls",
         "...",
       ],
       "prettier": { "allowed": true },

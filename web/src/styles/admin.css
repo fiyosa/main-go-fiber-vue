@@ -3,26 +3,26 @@
   --admin-bg: #f8fafc;
   --admin-surface: #ffffff;
   --admin-fg: #0f172a;
-  --admin-muted: #64748b;
-  --admin-border: #e2e8f0;
+  --admin-muted: #475569;
+  --admin-border: #cbd5e1;
   --admin-sidebar-bg: #ffffff;
-  --admin-sidebar-fg: #64748b;
+  --admin-sidebar-fg: #475569;
   --admin-sidebar-fg-hover: #0f172a;
   --admin-sidebar-active-bg: #f1f5f9;
-  --admin-sidebar-active-fg: #2563eb;
-  --admin-accent: #3b82f6;
-  --admin-accent-hover: #2563eb;
+  --admin-sidebar-active-fg: #1d4ed8;
+  --admin-accent: #2563eb;
+  --admin-accent-hover: #1d4ed8;
 }
 
 .dark .admin-theme {
   --admin-bg: #090d16;
   --admin-surface: #111827;
   --admin-fg: #f3f4f6;
-  --admin-muted: #9ca3af;
-  --admin-border: #1f2937;
+  --admin-muted: #cbd5e1;
+  --admin-border: #374151;
   --admin-sidebar-bg: #030712;
-  --admin-sidebar-fg: #9ca3af;
-  --admin-sidebar-fg-hover: #f3f4f6;
+  --admin-sidebar-fg: #cbd5e1;
+  --admin-sidebar-fg-hover: #ffffff;
   --admin-sidebar-active-bg: #1f2937;
   --admin-sidebar-active-fg: #60a5fa;
   --admin-accent: #3b82f6;

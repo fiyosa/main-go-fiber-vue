@@ -35,13 +35,11 @@
       <span>Rows per page:</span>
       <select
         v-model.number="limit"
-        class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1.5 text-xs text-[var(--admin-fg)] focus:border-blue-500 outline-none"
+        class="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] px-2.5 py-1.5 text-xs text-[var(--admin-fg)] outline-none focus:border-blue-500"
       >
         <option v-for="option in limitOptions" :key="option" :value="option">{{ option }}</option>
       </select>
-      <span>
-        Showing {{ startItem }} to {{ endItem }} of {{ total }} {{ total === 1 ? 'entry' : 'entries' }}
-      </span>
+      <span> Showing {{ startItem }} to {{ endItem }} of {{ total }} {{ total === 1 ? 'entry' : 'entries' }} </span>
     </div>
 
     <div class="flex items-center gap-1.5">
@@ -65,7 +63,9 @@
       >
         ‹
       </button>
-      <span class="px-3 py-1 font-medium text-[var(--admin-fg)]">Page {{ currentPage }} of {{ totalPages }}</span>
+      <span class="px-3 py-1 text-xs font-semibold text-[var(--admin-fg)]"
+        >Page {{ currentPage }} of {{ totalPages }}</span
+      >
       <button
         type="button"
         class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-fg)] transition-colors hover:bg-[var(--admin-border)]/50 disabled:cursor-not-allowed disabled:opacity-40"

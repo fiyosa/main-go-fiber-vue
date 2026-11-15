@@ -20,7 +20,7 @@
     :data-tone="tone ?? 'neutral'"
   >
     <div class="flex items-center justify-between">
-      <span class="text-xs font-medium tracking-wider text-[var(--admin-muted)] uppercase">{{ label }}</span>
+      <span class="text-[13px] font-semibold tracking-wide text-[var(--admin-muted)] uppercase">{{ label }}</span>
       <div
         v-if="$slots.icon"
         class="flex size-10 items-center justify-center rounded-xl"
@@ -32,7 +32,7 @@
 
     <div class="mt-4 flex flex-col gap-1">
       <h3 class="text-2xl font-bold tracking-tight text-[var(--admin-fg)]">{{ value }}</h3>
-      <p v-if="hint" class="text-xs text-[var(--admin-muted)]">{{ hint }}</p>
+      <p v-if="hint" class="text-[13px] text-[var(--admin-muted)]">{{ hint }}</p>
     </div>
   </div>
 </template>
