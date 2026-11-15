@@ -40,7 +40,7 @@
         "headers": {
           "Authorization": "Bearer {file:mcp-token}",
         },
-        "disabled": false,
+        "disabled": true,
       },
     },
   },
