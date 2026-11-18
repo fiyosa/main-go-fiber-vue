@@ -62,7 +62,11 @@
           </RouterLink>
         </nav>
 
-        <RouterLink to="/login" :class="[linkClasses, linkTone('login'), 'hidden md:inline-flex']">Login</RouterLink>
+        <!-- The wrapper owns the responsive display so it cannot collide with the
+             `inline-flex` in `linkClasses`. On phones Login lives in the menu panel. -->
+        <div class="hidden md:block">
+          <RouterLink to="/login" :class="[linkClasses, linkTone('login')]">Login</RouterLink>
+        </div>
 
         <button
           type="button"
