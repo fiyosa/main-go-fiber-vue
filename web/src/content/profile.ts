@@ -40,7 +40,7 @@ export interface Profile {
 }
 
 export const profile: Profile = {
-  name: 'Fiter Yogie Saputra',
+  name: 'Fiter Yogie SaputraXXX',
   headline: 'Fullstack Developer',
   location: 'Bandung, Indonesia',
   email: 'fiterys@gmail.com',
