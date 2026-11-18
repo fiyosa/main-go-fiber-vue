@@ -12,7 +12,7 @@
       <div class="flex flex-col items-center gap-4">
         <BrutalBadge tone="vivid-yellow" :rotation="-3">404</BrutalBadge>
 
-        <p class="text-6xl leading-none font-bold tracking-tight sm:text-7xl">Lost?</p>
+        <p class="text-5xl leading-none font-bold tracking-tight sm:text-6xl md:text-7xl">Lost?</p>
 
         <h1 class="text-xl font-bold">Page not found</h1>
         <p class="text-sm leading-relaxed">The route you requested does not exist or was moved.</p>

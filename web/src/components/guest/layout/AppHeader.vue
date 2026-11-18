@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
 
   import { useUIStore } from '../../../store/ui'
@@ -28,34 +28,45 @@
   const toggleTheme = () => {
     ui.toggleTheme()
   }
+
+  // Below the `md` breakpoint the nav collapses into a toggleable panel so the
+  // brand, theme switch, and menu button keep a single row on phones.
+  const menuOpen = ref(false)
+
+  watch(
+    () => route.fullPath,
+    () => {
+      menuOpen.value = false
+    }
+  )
 </script>
 
 <template>
   <header class="border-b-[3px] border-fg bg-surface">
-    <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-4">
+    <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 sm:py-4">
       <RouterLink
         to="/"
-        class="brutal-press inline-flex min-h-11 items-center gap-3 border-[3px] border-fg bg-vivid-yellow px-4 text-black shadow-brutal-sm"
+        class="brutal-press inline-flex min-h-11 shrink-0 items-center gap-2 border-[3px] border-fg bg-vivid-yellow px-3 text-black shadow-brutal-sm sm:gap-3 sm:px-4"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="size-6 shrink-0">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="size-5 shrink-0 sm:size-6">
           <rect x="1.5" y="1.5" width="21" height="21" fill="none" stroke="currentColor" stroke-width="3" />
           <path d="M13 4 6.5 13H11l-1 7 6.5-9H12z" fill="currentColor" />
         </svg>
-        <span class="text-lg font-bold tracking-tight uppercase">Home</span>
+        <span class="text-base font-bold tracking-tight uppercase sm:text-lg">Home</span>
       </RouterLink>
 
       <div class="flex items-center gap-2">
-        <nav class="flex items-center gap-2" aria-label="Main">
+        <nav class="hidden items-center gap-2 md:flex" aria-label="Main">
           <RouterLink v-for="link in links" :key="link.name" :to="link.to" :class="[linkClasses, linkTone(link.name)]">
             {{ link.label }}
           </RouterLink>
         </nav>
 
-        <RouterLink to="/login" :class="[linkClasses, linkTone('login')]">Login</RouterLink>
+        <RouterLink to="/login" :class="[linkClasses, linkTone('login'), 'hidden md:inline-flex']">Login</RouterLink>
 
         <button
           type="button"
-          class="brutal-press inline-flex size-11 items-center justify-center border-[3px] border-fg bg-vivid-yellow text-black shadow-brutal-sm"
+          class="brutal-press inline-flex size-11 shrink-0 items-center justify-center border-[3px] border-fg bg-vivid-yellow text-black shadow-brutal-sm"
           :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
           :aria-pressed="isDark"
           @click="toggleTheme"
@@ -79,7 +90,45 @@
             />
           </svg>
         </button>
+
+        <button
+          type="button"
+          class="brutal-press inline-flex size-11 shrink-0 items-center justify-center border-[3px] border-fg bg-surface text-fg shadow-brutal-sm md:hidden"
+          :aria-label="menuOpen ? 'Close menu' : 'Open menu'"
+          :aria-expanded="menuOpen"
+          aria-controls="guest-mobile-nav"
+          @click="menuOpen = !menuOpen"
+        >
+          <svg v-if="menuOpen" viewBox="0 0 24 24" aria-hidden="true" class="size-6">
+            <path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" stroke-width="2.5" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" aria-hidden="true" class="size-6">
+            <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2.5" />
+          </svg>
+        </button>
       </div>
+    </div>
+
+    <div v-if="menuOpen" id="guest-mobile-nav" class="border-t-[3px] border-fg md:hidden">
+      <nav class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-4 sm:px-6" aria-label="Mobile">
+        <RouterLink
+          v-for="link in links"
+          :key="link.name"
+          :to="link.to"
+          :class="[linkClasses, linkTone(link.name), 'w-full justify-center']"
+          @click="menuOpen = false"
+        >
+          {{ link.label }}
+        </RouterLink>
+
+        <RouterLink
+          to="/login"
+          :class="[linkClasses, linkTone('login'), 'w-full justify-center']"
+          @click="menuOpen = false"
+        >
+          Login
+        </RouterLink>
+      </nav>
     </div>
   </header>
 </template>

@@ -33,7 +33,7 @@
   const classes = computed(() => ['border-[3px] border-fg text-fg shadow-brutal', toneClasses[props.tone]])
 
   const headerClasses = computed(() => [
-    'border-b-[3px] border-fg px-6 py-4 font-mono text-xs font-bold tracking-[0.2em] uppercase',
+    'border-b-[3px] border-fg px-5 py-4 font-mono text-xs font-bold tracking-[0.2em] uppercase sm:px-6',
     accentClasses[props.accent],
   ])
 </script>
@@ -44,11 +44,11 @@
       <slot name="header" />
     </div>
 
-    <div class="p-6">
+    <div class="p-5 sm:p-6">
       <slot />
     </div>
 
-    <div v-if="$slots.footer" class="border-t-[3px] border-fg px-6 py-4">
+    <div v-if="$slots.footer" class="border-t-[3px] border-fg px-5 py-4 sm:px-6">
       <slot name="footer" />
     </div>
   </div>

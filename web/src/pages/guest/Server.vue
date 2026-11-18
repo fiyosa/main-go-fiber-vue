@@ -3,19 +3,19 @@
   import { serverContent } from '../../content/server'
 
   const secondaryLinkClasses =
-    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-surface px-6 font-mono text-sm font-bold tracking-widest text-fg uppercase shadow-brutal-sm'
+    'brutal-press inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-fg bg-surface px-4 font-mono text-xs font-bold tracking-widest text-fg uppercase shadow-brutal-sm sm:px-6 sm:text-sm'
 
   const badgeTones = ['sky', 'mint', 'soft-violet', 'vivid-yellow', 'hot-red', 'surface'] as const
 </script>
 
 <template>
-  <div class="flex flex-col gap-14">
+  <div class="flex flex-col gap-10 sm:gap-14">
     <!-- Hero -->
     <section class="grid items-start gap-8 lg:grid-cols-[1.4fr_0.6fr]" aria-labelledby="server-title">
       <div class="flex flex-col items-start gap-4">
         <BrutalBadge tone="mint" :rotation="-2">{{ serverContent.headline }}</BrutalBadge>
 
-        <h1 id="server-title" class="text-4xl leading-none font-bold tracking-tight sm:text-5xl">
+        <h1 id="server-title" class="text-3xl leading-none font-bold tracking-tight sm:text-4xl lg:text-5xl">
           {{ serverContent.title }}
         </h1>
 
